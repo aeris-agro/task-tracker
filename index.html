@@ -122,6 +122,15 @@
   .stat-pill.red   { background: var(--redDim);   color: var(--redLight);  border: 1px solid var(--red); }
   .stat-pill.blue  { background: var(--blueDim);  color: var(--blueLight); border: 1px solid var(--blue); }
 
+  /* ── Sync status pill ── */
+  .stat-pill.sync-loading,
+  .stat-pill.sync-syncing { background: var(--blueDim); color: var(--blueLight); border: 1px solid var(--blue); animation: syncpulse 1.4s ease-in-out infinite; }
+  .stat-pill.sync-pending { background: var(--amberDim); color: var(--amberLight); border: 1px solid var(--amber); }
+  .stat-pill.sync-synced  { background: var(--greenDim); color: var(--green4); border: 1px solid var(--green); }
+  .stat-pill.sync-offline { background: var(--amberDim); color: var(--amberLight); border: 1px solid var(--amber); }
+  .stat-pill.sync-error   { background: var(--redDim); color: var(--redLight); border: 1px solid var(--red); }
+  @keyframes syncpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+
   /* ── Layout ── */
   .app {
     display: grid;
@@ -577,6 +586,26 @@
     letter-spacing: 0.06em;
   }
 
+  /* ── Boot splash ── */
+  .boot-splash {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 9997;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    font-family: var(--mono);
+    color: var(--green4);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: opacity 0.3s;
+  }
+  .boot-splash.hidden { opacity: 0; pointer-events: none; }
+  .boot-splash .logo-dot { width: 12px; height: 12px; }
+
   /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
@@ -673,6 +702,12 @@
 </head>
 <body>
 
+<!-- Boot splash (shown while initial cloud load is happening) -->
+<div class="boot-splash" id="boot-splash">
+  <div class="logo-dot"></div>
+  <div>AERIS · Syncing Command Board…</div>
+</div>
+
 <!-- Header -->
 <header class="header">
   <div class="logo">
@@ -681,6 +716,7 @@
   </div>
   <div class="header-title">Phase 1 Command Board — Weeks 1–8</div>
   <div class="header-stats">
+    <div class="stat-pill sync-loading" id="sync-status" title="Cross-device sync status">⟳ Loading…</div>
     <div class="stat-pill green" id="stat-done">● 0 Done</div>
     <div class="stat-pill amber" id="stat-progress">◐ 0 In Progress</div>
     <div class="stat-pill red" id="stat-blocked">✕ 0 Blocked</div>
@@ -941,17 +977,133 @@ const CHECKLIST_ITEMS = [
   {id:"c8", label:"First offtaker LOI signed", target:"1 agreement minimum"},
 ];
 
-// ── Storage ──────────────────────────────────────────────────────────────────
-function load(key, def) {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; }
-}
-function save(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+// ── Cross-device sync storage ────────────────────────────────────────────────
+// Uses the artifact's persistent storage API (window.storage), which syncs
+// across devices tied to the same account. localStorage is kept as a local
+// cache for fast first paint and as a fallback if cloud storage is ever
+// unavailable.
+const STORAGE_KEY = 'aeris-state-v1';
+const SAVE_DEBOUNCE_MS = 500;
+const hasCloudStorage =
+  typeof window !== 'undefined' &&
+  typeof window.storage !== 'undefined' &&
+  window.storage &&
+  typeof window.storage.get === 'function' &&
+  typeof window.storage.set === 'function';
+
+let saveTimer = null;
+let saveInFlight = false;
+let dirtyDuringSave = false;
+
+function setSyncStatus(status) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  let displayStatus = status;
+  let label;
+  if (!hasCloudStorage) {
+    // No cloud storage available — make it clear changes are local-only.
+    if (status === 'loading')      { displayStatus = 'loading'; label = '⟳ Loading…'; }
+    else if (status === 'pending' ||
+             status === 'syncing') { displayStatus = 'offline'; label = '○ Saving locally'; }
+    else if (status === 'synced')  { displayStatus = 'offline'; label = '○ Local only'; }
+    else                           { displayStatus = 'error';   label = '! Save error'; }
+  } else {
+    label = {
+      loading: '⟳ Loading…',
+      pending: '◌ Pending',
+      syncing: '⟳ Syncing…',
+      synced:  '✓ Synced',
+      error:   '! Sync error',
+    }[status] || status;
+  }
+  el.textContent = label;
+  el.className = 'stat-pill sync-' + displayStatus;
+  el.title = hasCloudStorage
+    ? 'Changes sync across all your devices (' + status + ')'
+    : 'Cloud sync unavailable — saving to this device only';
 }
 
-let tasks = load('aeris_tasks', DEFAULT_TASKS);
-let checklist = load('aeris_checklist', {});
-let nextId = load('aeris_nextid', Math.max(...DEFAULT_TASKS.map(t=>t.id)) + 1);
+async function loadState() {
+  // 1. Preferred: cloud storage (cross-device).
+  if (hasCloudStorage) {
+    try {
+      const result = await window.storage.get(STORAGE_KEY);
+      if (result && result.value) {
+        return JSON.parse(result.value);
+      }
+    } catch (err) {
+      // Key doesn't exist yet on first run — fall through.
+    }
+  }
+  // 2. Migrate legacy per-key localStorage from the pre-sync version.
+  try {
+    const oldTasks = localStorage.getItem('aeris_tasks');
+    if (oldTasks) {
+      const oldChecklist = localStorage.getItem('aeris_checklist');
+      const oldNextId = localStorage.getItem('aeris_nextid');
+      return {
+        tasks: JSON.parse(oldTasks),
+        checklist: oldChecklist ? JSON.parse(oldChecklist) : {},
+        nextId: oldNextId ? JSON.parse(oldNextId) : null,
+        _migrated: true,
+      };
+    }
+  } catch {}
+  // 3. Local cache / offline fallback under the new key.
+  try {
+    const cached = localStorage.getItem(STORAGE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch {}
+  return null;
+}
+
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  setSyncStatus('pending');
+  saveTimer = setTimeout(doSave, SAVE_DEBOUNCE_MS);
+}
+
+async function doSave() {
+  saveTimer = null;
+  if (saveInFlight) { dirtyDuringSave = true; return; }
+  saveInFlight = true;
+  dirtyDuringSave = false;
+  const payload = JSON.stringify({
+    tasks, checklist, nextId,
+    updatedAt: Date.now(),
+    version: 1,
+  });
+  setSyncStatus('syncing');
+  let cloudOk = false;
+  if (hasCloudStorage) {
+    try {
+      await window.storage.set(STORAGE_KEY, payload);
+      cloudOk = true;
+    } catch (err) {
+      console.error('Cloud sync failed:', err);
+    }
+  }
+  // Always update the local cache too, so subsequent loads are fast.
+  try { localStorage.setItem(STORAGE_KEY, payload); } catch {}
+  setSyncStatus(cloudOk || !hasCloudStorage ? 'synced' : 'error');
+  saveInFlight = false;
+  if (dirtyDuringSave) scheduleSave();
+}
+
+// Best-effort flush when the tab is closed or hidden.
+window.addEventListener('beforeunload', () => {
+  if (saveTimer) { clearTimeout(saveTimer); doSave(); }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && saveTimer) {
+    clearTimeout(saveTimer); doSave();
+  }
+});
+
+// ── State ────────────────────────────────────────────────────────────────────
+let tasks = [];
+let checklist = {};
+let nextId = 1;
 let currentView = 'tasks';
 let filterStatus = 'ALL';
 let filterSearch = '';
@@ -964,7 +1116,12 @@ function getStats() {
   const blocked = tasks.filter(t=>t.status==='BLOCKED').length;
   const crit = tasks.filter(t=>t.priority==='CRITICAL');
   const critDone = crit.filter(t=>t.status==='DONE').length;
-  return { done, prog, blocked, total: tasks.length, pct: Math.round(done/tasks.length*100), critPct: Math.round(critDone/crit.length*100) };
+  return {
+    done, prog, blocked,
+    total: tasks.length,
+    pct: tasks.length ? Math.round(done/tasks.length*100) : 0,
+    critPct: crit.length ? Math.round(critDone/crit.length*100) : 0,
+  };
 }
 
 function updateStats() {
@@ -1105,7 +1262,7 @@ function attachChecklistListeners() {
   document.querySelectorAll('[data-cid]').forEach(cb => {
     cb.addEventListener('change', () => {
       checklist[cb.dataset.cid] = cb.checked;
-      save('aeris_checklist', checklist);
+      scheduleSave();
       render();
     });
   });
@@ -1177,7 +1334,7 @@ function renderWeekView(w) {
   const wTasks = tasks.filter(t=>t.week===w);
   const filtered = applyFilters(wTasks);
   const done = wTasks.filter(t=>t.status==='DONE').length;
-  const pct = Math.round(done/wTasks.length*100);
+  const pct = wTasks.length ? Math.round(done/wTasks.length*100) : 0;
   const gateClass = {gate:'gate',milestone:'milestone',sprint:'sprint',info:'info'}[meta.gate]||'info';
   const gateIcons = {gate:'⛔',milestone:'✅',sprint:'🚀',info:'ℹ️'};
   return `
@@ -1229,7 +1386,7 @@ function cycleStatus(id, e) {
   if(!t) return;
   const cycle = {TODO:'IN_PROGRESS',IN_PROGRESS:'DONE',DONE:'BLOCKED',BLOCKED:'TODO'};
   t.status = cycle[t.status];
-  save('aeris_tasks', tasks);
+  scheduleSave();
   toast(`Status → ${t.status}`);
   render();
 }
@@ -1238,7 +1395,7 @@ function deleteTask(id, e) {
   e.stopPropagation();
   if(!confirm('Delete this task?')) return;
   tasks = tasks.filter(t=>t.id!==id);
-  save('aeris_tasks', tasks);
+  scheduleSave();
   toast('Task deleted');
   render();
 }
@@ -1247,7 +1404,7 @@ function attachTaskListeners() {
   document.querySelectorAll('.notes-input').forEach(ta => {
     ta.addEventListener('blur', () => {
       const t = tasks.find(t=>t.id===parseInt(ta.dataset.taskid));
-      if(t) { t.notes = ta.value; save('aeris_tasks', tasks); }
+      if(t && t.notes !== ta.value) { t.notes = ta.value; scheduleSave(); }
     });
   });
 }
@@ -1302,10 +1459,9 @@ function saveTask() {
     toast('Task updated');
   } else {
     tasks.push({id: nextId++, ...taskData});
-    save('aeris_nextid', nextId);
     toast('Task added');
   }
-  save('aeris_tasks', tasks);
+  scheduleSave();
   closeModal();
   render();
 }
@@ -1333,7 +1489,47 @@ document.getElementById('task-modal').addEventListener('click', e => {
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-render();
+function hideBootSplash() {
+  const splash = document.getElementById('boot-splash');
+  if (!splash) return;
+  splash.classList.add('hidden');
+  setTimeout(() => splash.remove(), 400);
+}
+
+async function boot() {
+  setSyncStatus('loading');
+  let state = null;
+  try {
+    state = await loadState();
+  } catch (err) {
+    console.error('Load failed:', err);
+  }
+
+  if (state && Array.isArray(state.tasks) && state.tasks.length) {
+    tasks = state.tasks;
+    checklist = state.checklist && typeof state.checklist === 'object' ? state.checklist : {};
+    nextId = state.nextId || (Math.max(0, ...tasks.map(t => t.id)) + 1);
+    render();
+    hideBootSplash();
+    if (state._migrated) {
+      // Push migrated local data up to the cloud on first sync-capable run.
+      scheduleSave();
+      toast('Migrated local data to cloud sync');
+    } else {
+      setSyncStatus('synced');
+    }
+  } else {
+    // First ever run — seed with defaults and push to storage.
+    tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    checklist = {};
+    nextId = Math.max(...DEFAULT_TASKS.map(t => t.id)) + 1;
+    render();
+    hideBootSplash();
+    scheduleSave();
+  }
+}
+
+boot();
 </script>
 </body>
 </html>

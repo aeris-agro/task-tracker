@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>AERIS — Phase 1 Command Board</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
@@ -34,6 +34,8 @@
     --white:       #f0f7f2;
     --mono:        'Space Mono', monospace;
     --sans:        'DM Sans', sans-serif;
+    --bottom-nav-h: 60px;
+    --header-h:    52px;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,9 +47,10 @@
     font-size: 13px;
     min-height: 100vh;
     overflow-x: hidden;
+    /* Prevent layout shift when scrollbar appears */
+    scrollbar-gutter: stable;
   }
 
-  /* ── Scanline overlay ── */
   body::before {
     content: '';
     position: fixed;
@@ -61,52 +64,86 @@
   .header {
     background: var(--bg2);
     border-bottom: 1px solid var(--border);
-    padding: 0 24px;
+    padding: 0 16px;
     display: flex;
     align-items: center;
-    gap: 24px;
-    height: 56px;
+    gap: 12px;
+    height: var(--header-h);
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 200;
   }
+
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    padding: 8px 6px;
+    border: none;
+    background: none;
+    margin-right: 2px;
+    border-radius: 4px;
+    touch-action: manipulation;
+  }
+  .hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--textDim);
+    border-radius: 1px;
+    transition: all 0.2s;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
   .logo {
     font-family: var(--mono);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--green4);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    flex-shrink: 0;
   }
   .logo-dot {
-    width: 8px; height: 8px;
+    width: 7px; height: 7px;
     background: var(--green3);
     border-radius: 50%;
     box-shadow: 0 0 8px var(--green3);
     animation: pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
   }
   @keyframes pulse {
     0%,100% { opacity: 1; box-shadow: 0 0 8px var(--green3); }
     50% { opacity: 0.4; box-shadow: 0 0 3px var(--green3); }
   }
+
   .header-title {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 10px;
     color: var(--textDim);
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    padding-left: 24px;
+    padding-left: 12px;
     border-left: 1px solid var(--border2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+
   .header-stats {
     display: flex;
-    gap: 20px;
+    gap: 8px;
     margin-left: auto;
     align-items: center;
+    flex-shrink: 0;
   }
+
   .stat-pill {
     font-family: var(--mono);
     font-size: 10px;
@@ -116,13 +153,13 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    white-space: nowrap;
   }
   .stat-pill.green { background: var(--greenDim); color: var(--green4); border: 1px solid var(--green); }
   .stat-pill.amber { background: var(--amberDim); color: var(--amberLight); border: 1px solid var(--amber); }
   .stat-pill.red   { background: var(--redDim);   color: var(--redLight);  border: 1px solid var(--red); }
   .stat-pill.blue  { background: var(--blueDim);  color: var(--blueLight); border: 1px solid var(--blue); }
 
-  /* ── Sync status pill ── */
   .stat-pill.sync-loading,
   .stat-pill.sync-syncing { background: var(--blueDim); color: var(--blueLight); border: 1px solid var(--blue); animation: syncpulse 1.4s ease-in-out infinite; }
   .stat-pill.sync-pending { background: var(--amberDim); color: var(--amberLight); border: 1px solid var(--amber); }
@@ -135,7 +172,7 @@
   .app {
     display: grid;
     grid-template-columns: 220px 1fr;
-    min-height: calc(100vh - 56px);
+    min-height: calc(100vh - var(--header-h));
   }
 
   /* ── Sidebar ── */
@@ -144,8 +181,8 @@
     border-right: 1px solid var(--border);
     padding: 16px 0;
     position: sticky;
-    top: 56px;
-    height: calc(100vh - 56px);
+    top: var(--header-h);
+    height: calc(100vh - var(--header-h));
     overflow-y: auto;
   }
   .sidebar-section {
@@ -164,7 +201,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 7px 16px;
+    padding: 9px 16px;
     cursor: pointer;
     transition: background 0.12s;
     font-size: 12.5px;
@@ -172,8 +209,10 @@
     gap: 8px;
     border-left: 2px solid transparent;
     user-select: none;
+    min-height: 44px;
+    touch-action: manipulation;
   }
-  .sidebar-item:hover { background: var(--bg3); color: var(--text); }
+  .sidebar-item:hover, .sidebar-item:active { background: var(--bg3); color: var(--text); }
   .sidebar-item.active { background: var(--bg4); color: var(--green4); border-left-color: var(--green3); }
   .sidebar-item .count {
     font-family: var(--mono);
@@ -184,11 +223,12 @@
     color: var(--textDim);
     min-width: 22px;
     text-align: center;
+    flex-shrink: 0;
   }
   .sidebar-item.active .count { background: var(--greenDim); color: var(--green4); }
   .sidebar-divider { height: 1px; background: var(--border); margin: 8px 0; }
 
-  /* ── Progress bar in sidebar ── */
+  /* Progress block in sidebar */
   .progress-block { padding: 12px 16px; }
   .progress-label {
     font-family: var(--mono);
@@ -215,30 +255,37 @@
     transition: width 0.6s ease;
   }
 
-  /* ── Main content ── */
-  .main { padding: 20px 24px; overflow-y: auto; }
+  /* ── Main ── */
+  .main {
+    padding: 20px 24px;
+    overflow-y: auto;
+    min-width: 0;
+  }
 
   /* ── View header ── */
   .view-header {
     display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
   }
+  .view-header-left { flex: 1; min-width: 0; }
   .view-title {
     font-family: var(--mono);
-    font-size: 13px;
+    font-size: 12px;
     color: var(--white);
     letter-spacing: 0.06em;
     text-transform: uppercase;
     font-weight: 700;
   }
-  .view-sub { font-size: 12px; color: var(--textDim); margin-top: 2px; }
+  .view-sub { font-size: 11.5px; color: var(--textDim); margin-top: 3px; }
+
   .btn {
     font-family: var(--mono);
     font-size: 10px;
     letter-spacing: 0.08em;
-    padding: 7px 14px;
+    padding: 8px 14px;
     border-radius: 3px;
     cursor: pointer;
     border: 1px solid;
@@ -248,20 +295,23 @@
     align-items: center;
     gap: 6px;
     user-select: none;
+    touch-action: manipulation;
+    min-height: 36px;
+    white-space: nowrap;
   }
   .btn-primary { background: var(--green); color: var(--white); border-color: var(--green2); }
-  .btn-primary:hover { background: var(--green2); }
+  .btn-primary:hover, .btn-primary:active { background: var(--green2); }
   .btn-ghost { background: transparent; color: var(--textDim); border-color: var(--border2); }
-  .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+  .btn-ghost:hover, .btn-ghost:active { background: var(--bg3); color: var(--text); }
   .btn-danger { background: var(--redDim); color: var(--redLight); border-color: var(--red); }
-  .btn-danger:hover { background: var(--red); color: var(--white); }
+  .btn-danger:hover, .btn-danger:active { background: var(--red); color: var(--white); }
 
-  /* ── Week gate banner ── */
+  /* ── Gate banner ── */
   .gate-banner {
     border: 1px solid;
     border-radius: 4px;
     padding: 10px 14px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     font-size: 12px;
     display: flex;
     align-items: flex-start;
@@ -274,8 +324,8 @@
   .gate-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
   .gate-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; margin-bottom: 3px; }
 
-  /* ── Task table ── */
-  .task-table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+  /* ── DESKTOP Task table ── */
+  .task-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
   .task-table thead tr {
     background: var(--bg3);
     border-bottom: 1px solid var(--border2);
@@ -305,11 +355,120 @@
     line-height: 1.45;
   }
 
-  /* ── Stream badge ── */
+  /* ── MOBILE Task cards ── */
+  .task-cards { display: none; margin-bottom: 24px; }
+  .task-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 10px;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .task-card.done { opacity: 0.5; }
+  .task-card.done .task-card-action { text-decoration: line-through; color: var(--textDim); }
+  .task-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .task-card-badges { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; min-width: 0; }
+  .task-card-action {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .task-card-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .task-card-dep {
+    font-size: 11px;
+    color: var(--textDim);
+    font-style: italic;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    padding-left: 10px;
+    border-left: 2px solid var(--border2);
+  }
+  .task-card-bottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .task-card-notes {
+    flex: 1;
+    min-width: 120px;
+  }
+  .notes-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--textDim);
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-style: italic;
+    resize: none;
+    outline: none;
+    padding: 5px 8px;
+    min-height: 32px;
+    cursor: text;
+    border-radius: 3px;
+  }
+  .notes-input:focus { color: var(--text); border-color: var(--green2); }
+  .task-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .row-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: var(--bg4);
+    color: var(--textDim);
+    transition: all 0.1s;
+    touch-action: manipulation;
+    min-height: 32px;
+  }
+  .row-btn:hover, .row-btn:active { background: var(--bg3); color: var(--text); }
+  .row-btn.del:hover, .row-btn.del:active { background: var(--redDim); color: var(--redLight); border-color: var(--red); }
+
+  /* Desktop row-actions */
+  .row-actions {
+    display: none;
+    gap: 4px;
+    align-items: center;
+  }
+  .task-table tbody tr:hover .row-actions { display: flex; }
+  .notes-cell-desktop .notes-input {
+    background: transparent;
+    border: none;
+    padding: 0;
+    min-height: 18px;
+    border-radius: 0;
+    font-style: italic;
+  }
+  .notes-cell-desktop .notes-input:focus {
+    background: var(--bg4);
+    border: none;
+    padding: 2px 4px;
+    border-radius: 2px;
+  }
+  .task-output { color: var(--textDim); font-size: 11.5px; font-style: italic; }
+
+  /* ── Badges ── */
   .stream-badge {
     font-family: var(--mono);
     font-size: 9px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     padding: 3px 7px;
     border-radius: 2px;
@@ -327,7 +486,6 @@
   .stream-GRANTS     { background: #0d1a2a; color: #7dd3fc; border: 1px solid #0369a1; }
   .stream-REVIEW     { background: #2a1a0d; color: #fb923c; border: 1px solid #c2410c; }
 
-  /* ── Priority badge ── */
   .prio-badge {
     font-family: var(--mono);
     font-size: 9px;
@@ -342,7 +500,6 @@
   .prio-HIGH     { background: var(--amberDim); color: var(--amberLight); border: 1px solid var(--amber); }
   .prio-MEDIUM   { background: var(--greenDim); color: var(--green4); border: 1px solid var(--green); }
 
-  /* ── Status selector ── */
   .status-btn {
     display: inline-flex;
     align-items: center;
@@ -351,161 +508,90 @@
     font-size: 9px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    padding: 3px 8px;
+    padding: 4px 8px;
     border-radius: 2px;
     cursor: pointer;
     border: 1px solid;
     transition: all 0.12s;
     background: transparent;
     white-space: nowrap;
+    touch-action: manipulation;
+    min-height: 28px;
   }
   .status-TODO     { color: var(--textDim); border-color: var(--border2); }
-  .status-TODO:hover { background: var(--bg4); }
+  .status-TODO:hover, .status-TODO:active { background: var(--bg4); }
   .status-IN_PROGRESS { color: var(--amberLight); border-color: var(--amber); background: var(--amberDim); }
   .status-DONE       { color: var(--green4); border-color: var(--green); background: var(--greenDim); }
   .status-BLOCKED    { color: var(--redLight); border-color: var(--red); background: var(--redDim); }
 
-  /* ── Owner chip ── */
   .owner-chip {
     display: inline-block;
     font-family: var(--mono);
     font-size: 9px;
     background: var(--bg4);
     color: var(--textDim);
-    padding: 2px 7px;
+    padding: 3px 7px;
     border-radius: 2px;
     border: 1px solid var(--border2);
     white-space: nowrap;
   }
 
-  /* ── Task detail / output col ── */
-  .task-output { color: var(--textDim); font-size: 11.5px; font-style: italic; }
-
-  /* ── Notes field ── */
-  .notes-cell { max-width: 200px; }
-  .notes-input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    color: var(--textDim);
-    font-family: var(--sans);
-    font-size: 11.5px;
-    font-style: italic;
-    resize: none;
-    outline: none;
-    padding: 0;
-    min-height: 18px;
-    cursor: text;
-  }
-  .notes-input:focus { color: var(--text); background: var(--bg4); padding: 2px 4px; border-radius: 2px; }
-
-  /* ── Checklist view ── */
-  .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-  .checklist-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 14px 16px;
-  }
-  .checklist-card-title {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--green4);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-  }
-  .checklist-item {
+  /* ── Filter bar ── */
+  .filter-bar {
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 5px 0;
-    font-size: 12px;
-    color: var(--text);
-    cursor: pointer;
-    user-select: none;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
   }
-  .checklist-item input[type=checkbox] {
-    accent-color: var(--green3);
-    width: 13px;
-    height: 13px;
-    flex-shrink: 0;
-    margin-top: 1px;
-    cursor: pointer;
+  .filter-pills {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex: 1;
+    min-width: 0;
+    padding-bottom: 2px;
   }
-  .checklist-item.checked span { text-decoration: line-through; color: var(--textMuted); }
-  .checklist-target {
+  .filter-pills::-webkit-scrollbar { display: none; }
+  .filter-btn {
     font-family: var(--mono);
     font-size: 9px;
-    color: var(--green4);
-    background: var(--greenDim);
-    padding: 2px 6px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 10px;
     border-radius: 2px;
-    margin-left: auto;
-    flex-shrink: 0;
-    white-space: nowrap;
-    border: 1px solid var(--green);
-  }
-
-  /* ── Modal ── */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.75);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.18s;
-    pointer-events: none;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal {
-    background: var(--bg2);
+    cursor: pointer;
     border: 1px solid var(--border2);
-    border-radius: 6px;
-    width: 580px;
-    max-width: 95vw;
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 24px;
-    transform: translateY(12px);
-    transition: transform 0.18s;
+    background: transparent;
+    color: var(--textDim);
+    transition: all 0.12s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    touch-action: manipulation;
+    min-height: 32px;
   }
-  .modal-overlay.open .modal { transform: translateY(0); }
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-  }
-  .modal-title { font-family: var(--mono); font-size: 12px; color: var(--white); letter-spacing: 0.06em; text-transform: uppercase; }
-  .modal-close { background: none; border: none; color: var(--textDim); font-size: 18px; cursor: pointer; padding: 2px 6px; }
-  .modal-close:hover { color: var(--text); }
-  .form-group { margin-bottom: 14px; }
-  .form-label { font-family: var(--mono); font-size: 9px; color: var(--textDim); letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 5px; }
-  .form-input, .form-select, .form-textarea {
-    width: 100%;
+  .filter-btn:hover, .filter-btn:active { background: var(--bg3); color: var(--text); }
+  .filter-btn.active { background: var(--greenDim); color: var(--green4); border-color: var(--green); }
+  .filter-search {
     background: var(--bg3);
     border: 1px solid var(--border2);
     color: var(--text);
-    padding: 8px 10px;
+    padding: 6px 10px;
     border-radius: 3px;
     font-family: var(--sans);
-    font-size: 12.5px;
+    font-size: 12px;
     outline: none;
-    transition: border-color 0.12s;
+    width: 140px;
+    flex-shrink: 0;
+    min-height: 32px;
   }
-  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--green2); }
-  .form-textarea { resize: vertical; min-height: 64px; }
-  .form-select option { background: var(--bg2); }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .filter-search:focus { border-color: var(--green2); }
+  .filter-search::placeholder { color: var(--textMuted); }
 
-  /* ── Overview cards ── */
-  .overview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  /* ── Overview ── */
+  .overview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
   .overview-card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -538,43 +624,249 @@
   .card-label { font-size: 11px; color: var(--textDim); }
   .card-sub { font-family: var(--mono); font-size: 9px; color: var(--textMuted); margin-top: 4px; }
 
-  /* ── Filter bar ── */
-  .filter-bar {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
+  /* ── Checklist ── */
+  .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .checklist-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
   }
-  .filter-btn {
+  .checklist-card-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--green4);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    min-height: 36px;
+  }
+  .checklist-item input[type=checkbox] {
+    accent-color: var(--green3);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+  }
+  .checklist-item.checked span { text-decoration: line-through; color: var(--textMuted); }
+  .checklist-target {
     font-family: var(--mono);
     font-size: 9px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 4px 10px;
+    color: var(--green4);
+    background: var(--greenDim);
+    padding: 2px 6px;
     border-radius: 2px;
-    cursor: pointer;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--textDim);
-    transition: all 0.12s;
+    margin-left: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+    border: 1px solid var(--green);
   }
-  .filter-btn:hover { background: var(--bg3); color: var(--text); }
-  .filter-btn.active { background: var(--greenDim); color: var(--green4); border-color: var(--green); }
-  .filter-search {
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.18s;
+    pointer-events: none;
+    padding: 16px;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    width: 560px;
+    max-width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+    transform: translateY(16px);
+    transition: transform 0.18s;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+  .modal-title { font-family: var(--mono); font-size: 12px; color: var(--white); letter-spacing: 0.06em; text-transform: uppercase; }
+  .modal-close {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--textDim);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+    touch-action: manipulation;
+    min-height: 36px;
+    min-width: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 12px;
+  }
+  .modal-close:hover, .modal-close:active { color: var(--text); background: var(--bg4); }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-family: var(--mono); font-size: 9px; color: var(--textDim); letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
     background: var(--bg3);
     border: 1px solid var(--border2);
     color: var(--text);
-    padding: 5px 10px;
-    border-radius: 3px;
+    padding: 10px 12px;
+    border-radius: 4px;
     font-family: var(--sans);
-    font-size: 12px;
+    font-size: 14px;
     outline: none;
-    width: 180px;
-    margin-left: auto;
+    transition: border-color 0.12s;
+    -webkit-appearance: none;
+    min-height: 44px;
   }
-  .filter-search:focus { border-color: var(--green2); }
-  .filter-search::placeholder { color: var(--textMuted); }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--green2); }
+  .form-textarea { resize: vertical; min-height: 72px; }
+  .form-select option { background: var(--bg2); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+  /* ── Bottom nav (mobile only) ── */
+  .bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--bottom-nav-h);
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    z-index: 150;
+    padding: 0 8px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .bottom-nav-inner {
+    display: flex;
+    height: 100%;
+    align-items: stretch;
+  }
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    color: var(--textMuted);
+    touch-action: manipulation;
+    border-radius: 8px;
+    transition: all 0.12s;
+    padding: 6px 4px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-nav-item.active { color: var(--green4); background: var(--greenDim); }
+  .bottom-nav-item:active { background: var(--bg3); }
+  .bottom-nav-icon { font-size: 16px; line-height: 1; }
+  .bottom-nav-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* ── Fab (mobile add button) ── */
+  .fab {
+    display: none;
+    position: fixed;
+    bottom: calc(var(--bottom-nav-h) + 16px);
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    background: var(--green2);
+    border: 1px solid var(--green3);
+    border-radius: 50%;
+    color: var(--white);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 149;
+    box-shadow: 0 4px 20px rgba(61, 166, 104, 0.35);
+    touch-action: manipulation;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .fab:active { transform: scale(0.93); }
+
+  /* ── Sidebar drawer overlay ── */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 190;
+    touch-action: none;
+  }
+
+  /* ── Mini stats bar (mobile header) ── */
+  .mini-stats-bar {
+    display: none;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 16px;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+  .mini-stats-bar::-webkit-scrollbar { display: none; }
+  .mini-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    min-width: 48px;
+  }
+  .mini-stat-num {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .mini-stat-num.green  { color: var(--green4); }
+  .mini-stat-num.amber  { color: var(--amberLight); }
+  .mini-stat-num.red    { color: var(--redLight); }
+  .mini-stat-num.blue   { color: var(--blueLight); }
+  .mini-stat-label {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--textMuted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .mini-stat-div { width: 1px; background: var(--border2); align-self: stretch; flex-shrink: 0; }
+  .mini-progress-wrap { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 4px; }
+  .mini-progress-row { display: flex; align-items: center; gap: 6px; }
+  .mini-progress-label { font-family: var(--mono); font-size: 8px; color: var(--textMuted); white-space: nowrap; }
+  .mini-track { flex: 1; height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
 
   /* ── Empty state ── */
   .empty-state {
@@ -606,16 +898,11 @@
   .boot-splash.hidden { opacity: 0; pointer-events: none; }
   .boot-splash .logo-dot { width: 12px; height: 12px; }
 
-  /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--textMuted); }
-
   /* ── Toast ── */
   .toast {
     position: fixed;
-    bottom: 24px; right: 24px;
+    bottom: calc(var(--bottom-nav-h) + 16px);
+    right: 16px;
     background: var(--bg2);
     border: 1px solid var(--green);
     color: var(--green4);
@@ -629,34 +916,11 @@
     transform: translateY(8px);
     transition: all 0.2s;
     pointer-events: none;
+    max-width: calc(100vw - 32px);
   }
   .toast.show { opacity: 1; transform: translateY(0); }
 
-  /* ── Week header section ── */
-  .week-section { margin-bottom: 40px; }
-  .week-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 4px 4px 0 0;
-    cursor: pointer;
-    user-select: none;
-  }
-  .week-header:hover { background: var(--bg4); }
-  .week-num {
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--green3);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    min-width: 60px;
-  }
-  .week-focus { font-size: 12px; color: var(--text); flex: 1; }
-  .week-meta { font-family: var(--mono); font-size: 9px; color: var(--textMuted); }
+  /* ── Week mini-bar in view header ── */
   .week-progress-mini {
     display: flex;
     align-items: center;
@@ -664,147 +928,237 @@
     font-family: var(--mono);
     font-size: 9px;
     color: var(--textDim);
+    flex-shrink: 0;
   }
   .mini-bar { width: 60px; height: 3px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
-  .mini-fill { height: 100%; background: var(--green3); border-radius: 2px; transition: width 0.4s; }
-  .collapse-icon { font-size: 10px; color: var(--textMuted); margin-left: 8px; transition: transform 0.2s; }
-  .week-header.collapsed .collapse-icon { transform: rotate(-90deg); }
+  .mini-fill-bar { height: 100%; background: var(--green3); border-radius: 2px; transition: width 0.4s; }
 
-  /* ── Action dots on row hover ── */
-  .row-actions {
-    display: none;
-    gap: 4px;
-    align-items: center;
-  }
-  .task-table tbody tr:hover .row-actions { display: flex; }
-  .row-btn {
-    font-family: var(--mono);
-    font-size: 9px;
-    padding: 2px 6px;
-    border-radius: 2px;
-    cursor: pointer;
-    border: 1px solid var(--border2);
-    background: var(--bg4);
-    color: var(--textDim);
-    transition: all 0.1s;
-  }
-  .row-btn:hover { background: var(--bg3); color: var(--text); }
-  .row-btn.del:hover { background: var(--redDim); color: var(--redLight); border-color: var(--red); }
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
-  /* ── Responsive ── */
-  @media (max-width: 900px) {
+  /* ── MOBILE BREAKPOINT ── */
+  @media (max-width: 768px) {
+    :root { --header-h: 52px; }
+
+    /* Hide desktop sidebar and show hamburger */
+    .hamburger { display: flex; }
+    .header-title { display: none; }
+
+    /* Condense header stats to just sync status */
+    .header-stats .stat-pill:not(#sync-status) { display: none; }
+
+    /* Show mini stats bar below header */
+    .mini-stats-bar { display: flex; }
+
+    /* Sidebar becomes off-canvas drawer */
     .app { grid-template-columns: 1fr; }
-    .sidebar { position: static; height: auto; }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -240px;
+      width: 240px;
+      height: 100vh;
+      z-index: 195;
+      transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      padding-top: calc(var(--header-h) + 8px);
+    }
+    .sidebar.open { left: 0; }
+    .sidebar-overlay { display: block; opacity: 0; transition: opacity 0.25s; pointer-events: none; }
+    .sidebar-overlay.open { opacity: 1; pointer-events: all; }
+
+    /* Main content adjusts for bottom nav */
+    .main {
+      padding: 14px 14px calc(var(--bottom-nav-h) + 72px);
+      min-height: calc(100vh - var(--header-h));
+    }
+
+    /* Show bottom nav and FAB */
+    .bottom-nav { display: block; }
+    .fab { display: flex; }
+
+    /* Cards instead of table */
+    .task-table { display: none; }
+    .task-cards { display: block; }
+
+    /* Overview 2x2 grid */
     .overview-grid { grid-template-columns: 1fr 1fr; }
+    .card-num { font-size: 22px; }
+
+    /* Checklist single column */
     .checklist-grid { grid-template-columns: 1fr; }
+    .checklist-target { display: none; }
+
+    /* Modal full-screen on mobile */
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal {
+      border-radius: 16px 16px 0 0;
+      max-height: 92vh;
+      width: 100%;
+      padding: 20px 16px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
+    }
+    .form-row { grid-template-columns: 1fr; }
+
+    /* Filter bar horizontal scroll */
+    .filter-bar { flex-wrap: nowrap; overflow: hidden; }
+    .filter-search { width: 110px; }
+
+    /* Gate banner compact */
+    .gate-banner { font-size: 11.5px; }
+    .gate-icon { font-size: 16px; }
+
+    /* Overview progress grids */
+    .overview-2col { grid-template-columns: 1fr !important; }
+  }
+
+  @media (max-width: 400px) {
+    .filter-search { width: 90px; font-size: 11px; }
+    .btn { font-size: 9px; padding: 7px 10px; }
   }
 </style>
 </head>
 <body>
 
-<!-- Boot splash (shown while initial cloud load is happening) -->
 <div class="boot-splash" id="boot-splash">
   <div class="logo-dot"></div>
-  <div>AERIS · Syncing Command Board…</div>
+  <div>AERIS · Syncing…</div>
 </div>
+
+<!-- Sidebar overlay (mobile tap-to-close) -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <!-- Header -->
 <header class="header">
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
   <div class="logo">
     <div class="logo-dot"></div>
     AERIS
   </div>
   <div class="header-title">Phase 1 Command Board — Weeks 1–8</div>
   <div class="header-stats">
-    <div class="stat-pill sync-loading" id="sync-status" title="Cross-device sync status">⟳ Loading…</div>
+    <div class="stat-pill sync-loading" id="sync-status" title="Sync status">⟳ Syncing</div>
     <div class="stat-pill green" id="stat-done">● 0 Done</div>
-    <div class="stat-pill amber" id="stat-progress">◐ 0 In Progress</div>
+    <div class="stat-pill amber" id="stat-progress">◐ 0 Active</div>
     <div class="stat-pill red" id="stat-blocked">✕ 0 Blocked</div>
     <div class="stat-pill blue" id="stat-total">◻ 0 Total</div>
   </div>
 </header>
 
+<!-- Mini stats bar (mobile only) -->
+<div class="mini-stats-bar" id="mini-stats-bar">
+  <div class="mini-stat">
+    <div class="mini-stat-num green" id="m-done">0</div>
+    <div class="mini-stat-label">Done</div>
+  </div>
+  <div class="mini-stat-div"></div>
+  <div class="mini-stat">
+    <div class="mini-stat-num amber" id="m-prog">0</div>
+    <div class="mini-stat-label">Active</div>
+  </div>
+  <div class="mini-stat-div"></div>
+  <div class="mini-stat">
+    <div class="mini-stat-num red" id="m-blocked">0</div>
+    <div class="mini-stat-label">Blocked</div>
+  </div>
+  <div class="mini-stat-div"></div>
+  <div class="mini-stat">
+    <div class="mini-stat-num blue" id="m-crit">0</div>
+    <div class="mini-stat-label">Critical</div>
+  </div>
+  <div class="mini-stat-div"></div>
+  <div class="mini-progress-wrap">
+    <div class="mini-progress-row">
+      <span class="mini-progress-label">Phase 1</span>
+      <div class="mini-track"><div class="mini-fill" id="m-pct" style="width:0%;background:linear-gradient(90deg,var(--green),var(--green3))"></div></div>
+      <span class="mini-progress-label" id="m-pct-label">0%</span>
+    </div>
+    <div class="mini-progress-row">
+      <span class="mini-progress-label">Critical</span>
+      <div class="mini-track"><div class="mini-fill" id="m-crit-bar" style="width:0%;background:linear-gradient(90deg,var(--red),var(--amber))"></div></div>
+      <span class="mini-progress-label" id="m-crit-label">0%</span>
+    </div>
+  </div>
+</div>
+
 <div class="app">
-  <!-- Sidebar -->
-  <nav class="sidebar">
+  <!-- Sidebar (desktop: sticky | mobile: drawer) -->
+  <nav class="sidebar" id="sidebar">
     <div class="sidebar-section">
       <div class="sidebar-label">Views</div>
-      <div class="sidebar-item active" data-view="tasks" onclick="setView('tasks')">
+      <div class="sidebar-item active" data-view="tasks" onclick="setView('tasks');closeSidebar()">
         All Tasks <span class="count" id="cnt-all">0</span>
       </div>
-      <div class="sidebar-item" data-view="overview" onclick="setView('overview')">
+      <div class="sidebar-item" data-view="overview" onclick="setView('overview');closeSidebar()">
         Overview
       </div>
-      <div class="sidebar-item" data-view="checklist" onclick="setView('checklist')">
+      <div class="sidebar-item" data-view="checklist" onclick="setView('checklist');closeSidebar()">
         Gate Checklist
       </div>
     </div>
-
     <div class="sidebar-divider"></div>
-
     <div class="sidebar-section">
       <div class="sidebar-label">Weeks</div>
-      <div class="sidebar-item" data-view="week-1" onclick="setView('week-1')">
-        Week 1 <span class="count" id="cnt-w1">0</span>
-      </div>
-      <div class="sidebar-item" data-view="week-2" onclick="setView('week-2')">
-        Week 2 <span class="count" id="cnt-w2">0</span>
-      </div>
-      <div class="sidebar-item" data-view="week-3" onclick="setView('week-3')">
-        Week 3 <span class="count" id="cnt-w3">0</span>
-      </div>
-      <div class="sidebar-item" data-view="week-4" onclick="setView('week-4')">
-        Week 4 <span class="count" id="cnt-w4">0</span>
-      </div>
-      <div class="sidebar-item" data-view="week-5" onclick="setView('week-5')">
-        Week 5 <span class="count" id="cnt-w5">0</span>
-      </div>
-      <div class="sidebar-item" data-view="week-6" onclick="setView('week-6')">
-        Week 6 <span class="count" id="cnt-w6">0</span>
-      </div>
-      <div class="sidebar-item" data-view="week-7" onclick="setView('week-7')">
-        Week 7 <span class="count" id="cnt-w7">0</span>
-      </div>
-      <div class="sidebar-item" data-view="week-8" onclick="setView('week-8')">
-        Week 8 <span class="count" id="cnt-w8">0</span>
-      </div>
+      <div class="sidebar-item" data-view="week-1" onclick="setView('week-1');closeSidebar()">Week 1 <span class="count" id="cnt-w1">0</span></div>
+      <div class="sidebar-item" data-view="week-2" onclick="setView('week-2');closeSidebar()">Week 2 <span class="count" id="cnt-w2">0</span></div>
+      <div class="sidebar-item" data-view="week-3" onclick="setView('week-3');closeSidebar()">Week 3 <span class="count" id="cnt-w3">0</span></div>
+      <div class="sidebar-item" data-view="week-4" onclick="setView('week-4');closeSidebar()">Week 4 <span class="count" id="cnt-w4">0</span></div>
+      <div class="sidebar-item" data-view="week-5" onclick="setView('week-5');closeSidebar()">Week 5 <span class="count" id="cnt-w5">0</span></div>
+      <div class="sidebar-item" data-view="week-6" onclick="setView('week-6');closeSidebar()">Week 6 <span class="count" id="cnt-w6">0</span></div>
+      <div class="sidebar-item" data-view="week-7" onclick="setView('week-7');closeSidebar()">Week 7 <span class="count" id="cnt-w7">0</span></div>
+      <div class="sidebar-item" data-view="week-8" onclick="setView('week-8');closeSidebar()">Week 8 <span class="count" id="cnt-w8">0</span></div>
     </div>
-
     <div class="sidebar-divider"></div>
-
     <div class="sidebar-section">
       <div class="sidebar-label">Streams</div>
-      <div class="sidebar-item" data-view="stream-TECHNICAL" onclick="setView('stream-TECHNICAL')">
-        Technical <span class="count" id="cnt-TECHNICAL">0</span>
-      </div>
-      <div class="sidebar-item" data-view="stream-GOVERNMENT" onclick="setView('stream-GOVERNMENT')">
-        Government <span class="count" id="cnt-GOVERNMENT">0</span>
-      </div>
-      <div class="sidebar-item" data-view="stream-PEOPLE" onclick="setView('stream-PEOPLE')">
-        People <span class="count" id="cnt-PEOPLE">0</span>
-      </div>
-      <div class="sidebar-item" data-view="stream-COMMERCIAL" onclick="setView('stream-COMMERCIAL')">
-        Commercial <span class="count" id="cnt-COMMERCIAL">0</span>
-      </div>
-      <div class="sidebar-item" data-view="stream-HARDWARE" onclick="setView('stream-HARDWARE')">
-        Hardware <span class="count" id="cnt-HARDWARE">0</span>
-      </div>
+      <div class="sidebar-item" data-view="stream-TECHNICAL" onclick="setView('stream-TECHNICAL');closeSidebar()">Technical <span class="count" id="cnt-TECHNICAL">0</span></div>
+      <div class="sidebar-item" data-view="stream-GOVERNMENT" onclick="setView('stream-GOVERNMENT');closeSidebar()">Government <span class="count" id="cnt-GOVERNMENT">0</span></div>
+      <div class="sidebar-item" data-view="stream-PEOPLE" onclick="setView('stream-PEOPLE');closeSidebar()">People <span class="count" id="cnt-PEOPLE">0</span></div>
+      <div class="sidebar-item" data-view="stream-COMMERCIAL" onclick="setView('stream-COMMERCIAL');closeSidebar()">Commercial <span class="count" id="cnt-COMMERCIAL">0</span></div>
+      <div class="sidebar-item" data-view="stream-HARDWARE" onclick="setView('stream-HARDWARE');closeSidebar()">Hardware <span class="count" id="cnt-HARDWARE">0</span></div>
     </div>
-
     <div class="sidebar-divider"></div>
     <div class="progress-block">
-      <div class="progress-label">Phase 1 Progress <span id="pct-label">0%</span></div>
+      <div class="progress-label">Phase 1 <span id="pct-label">0%</span></div>
       <div class="progress-track"><div class="progress-fill" id="main-progress" style="width:0%"></div></div>
       <div class="progress-label" style="margin-top:6px">Critical Path <span id="crit-label">0%</span></div>
-      <div class="progress-track"><div class="progress-fill" id="crit-progress" style="width:0%; background: linear-gradient(90deg, var(--red), var(--amber))"></div></div>
+      <div class="progress-track"><div class="progress-fill" id="crit-progress" style="width:0%;background:linear-gradient(90deg,var(--red),var(--amber))"></div></div>
     </div>
   </nav>
 
-  <!-- Main -->
+  <!-- Main content -->
   <main class="main" id="main-content"></main>
 </div>
 
-<!-- Add Task Modal -->
+<!-- Bottom navigation (mobile) -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <div class="bottom-nav-item active" id="bnav-tasks" onclick="setView('tasks');updateBottomNav('tasks')">
+      <div class="bottom-nav-icon">☰</div>
+      <div class="bottom-nav-label">Tasks</div>
+    </div>
+    <div class="bottom-nav-item" id="bnav-overview" onclick="setView('overview');updateBottomNav('overview')">
+      <div class="bottom-nav-icon">◈</div>
+      <div class="bottom-nav-label">Overview</div>
+    </div>
+    <div class="bottom-nav-item" id="bnav-checklist" onclick="setView('checklist');updateBottomNav('checklist')">
+      <div class="bottom-nav-icon">✓</div>
+      <div class="bottom-nav-label">Gate</div>
+    </div>
+    <div class="bottom-nav-item" id="bnav-weeks" onclick="toggleSidebar()">
+      <div class="bottom-nav-icon">⌗</div>
+      <div class="bottom-nav-label">Weeks</div>
+    </div>
+  </div>
+</nav>
+
+<!-- FAB -->
+<button class="fab" onclick="openModal()" aria-label="Add task">+</button>
+
+<!-- Add/Edit Task Modal -->
 <div class="modal-overlay" id="task-modal">
   <div class="modal">
     <div class="modal-header">
@@ -832,12 +1186,12 @@
     </div>
     <div class="form-group">
       <label class="form-label">Action / Deliverable</label>
-      <textarea class="form-textarea" id="f-action" rows="3" placeholder="Describe the task..."></textarea>
+      <textarea class="form-textarea" id="f-action" rows="3" placeholder="Describe the task…"></textarea>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Owner</label>
-        <input class="form-input" id="f-owner" placeholder="e.g. CEO, CTO, BE#1…">
+        <input class="form-input" id="f-owner" placeholder="e.g. CEO, CTO…">
       </div>
       <div class="form-group">
         <label class="form-label">Priority</label>
@@ -850,20 +1204,22 @@
     </div>
     <div class="form-group">
       <label class="form-label">Dependency / Output</label>
-      <input class="form-input" id="f-dep" placeholder="What does this unlock or depend on?">
+      <input class="form-input" id="f-dep" placeholder="What does this unlock?">
     </div>
-    <div class="form-group">
-      <label class="form-label">Status</label>
-      <select class="form-select" id="f-status">
-        <option value="TODO">To Do</option>
-        <option value="IN_PROGRESS">In Progress</option>
-        <option value="DONE">Done</option>
-        <option value="BLOCKED">Blocked</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notes</label>
-      <input class="form-input" id="f-notes" placeholder="Optional notes or updates…">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="f-status">
+          <option value="TODO">To Do</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="DONE">Done</option>
+          <option value="BLOCKED">Blocked</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input class="form-input" id="f-notes" placeholder="Optional notes…">
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -877,18 +1233,17 @@
 <script>
 // ── Data ─────────────────────────────────────────────────────────────────────
 const WEEK_META = {
-  1: { days: "Day 1–7",   focus: "Infrastructure accounts live · Government outreach initiated · CTO recruitment open",            gate: "gate",      gateText: "Nothing else starts until GEE account is approved and the NDVI script runs over Lango." },
-  2: { days: "Day 8–14",  focus: "Event bus live · USSD foundation · First NDVI map exported · CTO offer sent",                  gate: "gate",      gateText: "NDVI + CHIRPS drought visualization must be exported from GEE by end of Week 2." },
-  3: { days: "Day 15–21", focus: "CTO onboards · Aeryion dashboard v0.1 live · USSD farmer registration · District meetings",    gate: "info",      gateText: "CTO's first job: architecture review. Flutter vs Kotlin conflict must be resolved this week." },
-  4: { days: "Day 22–30", focus: "Month 1 close · LOI from MAAIF · Engineering team at full capacity · USSD with real farmers",  gate: "gate",      gateText: "At least 1 signed LOI from MAAIF or NEMA must exist by end of Week 4 — this is a Phase 1 blocker." },
-  5: { days: "Day 31–37", focus: "Full engineering MVP sprint begins · IoT hardware arrives · MAAIF MOU negotiation opens",       gate: "sprint",    gateText: "Full engineering team live. Week 5 opens the 4-week MVP sprint — all three platforms build in parallel." },
-  6: { days: "Day 38–44", focus: "First IoT stations deployed · Aeryion v0.5 live with real sensor data · First offtaker deal",  gate: "milestone", gateText: "First 5 IoT stations deployed in Lira. Real hardware meets the software stack for the first time." },
-  7: { days: "Day 45–51", focus: "Aeryion → Coltiva Kafka integration live · 40 village agents trained · MAAIF MOU signature",  gate: "milestone", gateText: "The closed-loop cycle becomes real: WEATHER_ALERT → Kafka → Coltiva → USSD alert to farmers." },
-  8: { days: "Day 52–60", focus: "All 120 agents certified · Full platform integration review · Month 2 close · Phase 2 plan",   gate: "gate",      gateText: "Phase 1 Gate Review. Minimum 6/8 criteria Green to proceed to Phase 2 without intervention." },
+  1: { days:"Day 1–7",   focus:"Infrastructure accounts live · Government outreach initiated · CTO recruitment open", gate:"gate",      gateText:"Nothing else starts until GEE account is approved and the NDVI script runs over Lango." },
+  2: { days:"Day 8–14",  focus:"Event bus live · USSD foundation · First NDVI map exported · CTO offer sent",        gate:"gate",      gateText:"NDVI + CHIRPS drought visualization must be exported from GEE by end of Week 2." },
+  3: { days:"Day 15–21", focus:"CTO onboards · Aeryion dashboard v0.1 live · USSD farmer registration",              gate:"info",      gateText:"CTO's first job: architecture review. Flutter vs Kotlin conflict must be resolved this week." },
+  4: { days:"Day 22–30", focus:"Month 1 close · LOI from MAAIF · Engineering team at full capacity",                 gate:"gate",      gateText:"At least 1 signed LOI from MAAIF or NEMA must exist by end of Week 4." },
+  5: { days:"Day 31–37", focus:"Full engineering MVP sprint begins · IoT hardware arrives · MAAIF MOU negotiation",  gate:"sprint",    gateText:"Full engineering team live. Week 5 opens the 4-week MVP sprint — all three platforms build in parallel." },
+  6: { days:"Day 38–44", focus:"First IoT stations deployed · Aeryion v0.5 live · First offtaker deal",             gate:"milestone", gateText:"First 5 IoT stations deployed in Lira. Real hardware meets the software stack for the first time." },
+  7: { days:"Day 45–51", focus:"Kafka integration live · 40 village agents trained · MAAIF MOU signature",          gate:"milestone", gateText:"The closed-loop cycle becomes real: WEATHER_ALERT → Kafka → Coltiva → USSD alert to farmers." },
+  8: { days:"Day 52–60", focus:"120 agents certified · Full platform review · Month 2 close · Phase 2 plan",        gate:"gate",      gateText:"Phase 1 Gate Review. Minimum 6/8 criteria Green to proceed to Phase 2 without intervention." },
 };
 
 const DEFAULT_TASKS = [
-  // WEEK 1
   {id:1,week:1,stream:"TECHNICAL",owner:"CEO+CTO",action:"Register Google Earth Engine account (research use). Run sample Lango NDVI script immediately on approval.",dep:"Unlocks: entire Aeryion satellite pipeline",priority:"CRITICAL",status:"TODO",notes:""},
   {id:2,week:1,stream:"TECHNICAL",owner:"CTO",action:"Create Supabase project 'aeris-production'. Enable PostGIS extension. Create initial schema: farmers, farms, districts, sub_counties, crops tables with geometry columns.",dep:"Unlocks: all spatial data storage across platforms",priority:"CRITICAL",status:"TODO",notes:""},
   {id:3,week:1,stream:"TECHNICAL",owner:"CTO",action:"Set up GitHub organisation. Create monorepo with /aeryion, /coltiva, /linktrade, /shared folders. Configure branch protection and GitHub Actions CI pipeline.",dep:"Unlocks: all engineers can contribute from Day 1",priority:"CRITICAL",status:"TODO",notes:""},
@@ -896,12 +1251,11 @@ const DEFAULT_TASKS = [
   {id:5,week:1,stream:"GOVERNMENT",owner:"CEO",action:"Dispatch formal partnership letters to MAAIF Permanent Secretary, NEMA DG, Lira CAO, Alebtong CAO, Dokolo CAO. Request meetings within 10 business days.",dep:"Output: meeting calendar for Weeks 3–5",priority:"CRITICAL",status:"TODO",notes:""},
   {id:6,week:1,stream:"GOVERNMENT",owner:"CEO",action:"File UAV operating permit application with Civil Aviation Authority (CAA) Uganda. Include technical specs, operational zones, safety protocols.",dep:"Long lead time — start immediately",priority:"HIGH",status:"TODO",notes:""},
   {id:7,week:1,stream:"PEOPLE",owner:"CEO",action:"Post co-founder/CTO search on YC Co-founder Matching, LinkedIn Uganda, Hive Colab Kampala Slack, Makerere CS alumni network. Post all 5 engineering roles.",dep:"Output: shortlist by Week 2",priority:"CRITICAL",status:"TODO",notes:""},
-  {id:8,week:1,stream:"TECHNICAL",owner:"CTO",action:"Set up Vercel (3 projects: aeryion-dashboard, coltiva-web, linktrade-web) and Railway.app. Deploy hello-world FastAPI to confirm Python pipeline works. Both free tier.",dep:"Unlocks: frontend deployments from Day 1",priority:"HIGH",status:"TODO",notes:""},
+  {id:8,week:1,stream:"TECHNICAL",owner:"CTO",action:"Set up Vercel (3 projects: aeryion-dashboard, coltiva-web, linktrade-web) and Railway.app. Deploy hello-world FastAPI to confirm Python pipeline works.",dep:"Unlocks: frontend deployments from Day 1",priority:"HIGH",status:"TODO",notes:""},
   {id:9,week:1,stream:"COMMERCIAL",owner:"CEO",action:"Map top 10 maize and sesame offtakers/exporters in Northern Uganda. Begin outreach to top 5. Target: first meeting in Week 2.",dep:"Output: offtaker pipeline for Phase 2",priority:"HIGH",status:"TODO",notes:""},
   {id:10,week:1,stream:"FINANCE",owner:"CEO",action:"Open AERIS business bank account. Set up expense tracking. Begin URSB company registration (~$50–140). Required for MOUs and grants.",dep:"Unblocks: all formal agreements",priority:"HIGH",status:"TODO",notes:""},
-  // WEEK 2
   {id:11,week:2,stream:"TECHNICAL",owner:"CTO",action:"Run Lango NDVI + CHIRPS anomaly GEE script. Export NDVI map and rainfall anomaly map as GeoTIFFs to Google Drive. Share with CEO.",dep:"Output: Lango_NDVI_2024 + Rainfall_Anomaly_2024 GeoTIFFs",priority:"CRITICAL",status:"TODO",notes:""},
-  {id:12,week:2,stream:"TECHNICAL",owner:"CTO",action:"Create Upstash Kafka cluster with 6 topics: WEATHER_ALERT, SOIL_REPORT_READY, HARVEST_FORECAST, PEST_OUTBREAK_DETECTED, MARKET_PRICE_UPDATE, TRADE_COMPLETED. Set up Redis (180s USSD session TTL).",dep:"Unlocks: all cross-platform event flows",priority:"CRITICAL",status:"TODO",notes:""},
+  {id:12,week:2,stream:"TECHNICAL",owner:"CTO",action:"Create Upstash Kafka cluster with 6 topics: WEATHER_ALERT, SOIL_REPORT_READY, HARVEST_FORECAST, PEST_OUTBREAK_DETECTED, MARKET_PRICE_UPDATE, TRADE_COMPLETED. Set up Redis.",dep:"Unlocks: all cross-platform event flows",priority:"CRITICAL",status:"TODO",notes:""},
   {id:13,week:2,stream:"TECHNICAL",owner:"CTO",action:"Create Africa's Talking developer account. Run USSD hello-world tutorial. Confirm USSD callback → FastAPI route works end-to-end. Document API keys in Notion.",dep:"Unlocks: Coltiva USSD flow build in Week 3",priority:"CRITICAL",status:"TODO",notes:""},
   {id:14,week:2,stream:"PEOPLE",owner:"CEO",action:"Shortlist and interview CTO candidates. Target: offer sent by end of Week 2. CTO arrival gates the entire tech build.",dep:"Output: signed offer",priority:"CRITICAL",status:"TODO",notes:""},
   {id:15,week:2,stream:"GOVERNMENT",owner:"CEO",action:"First meeting with MAAIF technical directorate. Present AERIS concept. Request data sharing MOU draft. Show satellite maps as proof of capability.",dep:"Output: MOU draft process initiated",priority:"CRITICAL",status:"TODO",notes:""},
@@ -910,17 +1264,15 @@ const DEFAULT_TASKS = [
   {id:18,week:2,stream:"COMMERCIAL",owner:"CEO",action:"First meetings with 3 offtaker candidates. Present LinkTrade marketplace model. Relationship building only — no commitments yet.",dep:"Output: offtaker interest list for Week 4 follow-up",priority:"HIGH",status:"TODO",notes:""},
   {id:19,week:2,stream:"HARDWARE",owner:"CEO",action:"Issue RFQ to IoT weather station suppliers. Target: 25 units of ground-based LoRaWAN sensors. Evaluate 3 suppliers. Delivery target: Week 8.",dep:"Output: supplier shortlist",priority:"HIGH",status:"TODO",notes:""},
   {id:20,week:2,stream:"GRANTS",owner:"CEO",action:"Apply: Tony Elumelu Foundation (if window open). Apply: GSMA Innovation Fund for mobile agriculture. Both non-dilutive, no equity.",dep:"Output: 2 grant applications submitted",priority:"MEDIUM",status:"TODO",notes:""},
-  // WEEK 3
-  {id:21,week:3,stream:"PEOPLE",owner:"CEO/CTO",action:"CTO formally starts. Architecture review: validate Supabase vs PostgreSQL, Flutter vs Kotlin, Upstash Kafka vs AWS MSK. Document final decisions in Notion ADR. No reverting.",dep:"Output: locked tech stack",priority:"CRITICAL",status:"TODO",notes:""},
-  {id:22,week:3,stream:"TECHNICAL",owner:"CTO",action:"Aeryion dashboard v0.1: React + Mapbox GL. Display NDVI map layer for Lira district from Week 2 GeoTIFF. Add CHIRPS rainfall overlay. Deploy to Vercel. Share URL.",dep:"Output: first shareable live dashboard URL",priority:"CRITICAL",status:"TODO",notes:""},
+  {id:21,week:3,stream:"PEOPLE",owner:"CEO/CTO",action:"CTO formally starts. Architecture review: validate Supabase vs PostgreSQL, Flutter vs Kotlin, Upstash Kafka vs AWS MSK. Document final decisions in Notion ADR.",dep:"Output: locked tech stack",priority:"CRITICAL",status:"TODO",notes:""},
+  {id:22,week:3,stream:"TECHNICAL",owner:"CTO",action:"Aeryion dashboard v0.1: React + Mapbox GL. Display NDVI map layer for Lira district from Week 2 GeoTIFF. Add CHIRPS rainfall overlay. Deploy to Vercel.",dep:"Output: first shareable live dashboard URL",priority:"CRITICAL",status:"TODO",notes:""},
   {id:23,week:3,stream:"TECHNICAL",owner:"CTO+BE2",action:"Coltiva USSD v0.1: farmer registration flow. Fields: name, phone (auto from USSD), crop type, district, sub-county. Store to Supabase farmers table with PostGIS sub_county_id lookup.",dep:"Unlocks: personalized recommendations in Week 4",priority:"CRITICAL",status:"TODO",notes:""},
   {id:24,week:3,stream:"GOVERNMENT",owner:"CEO",action:"First meetings with all 3 district LGs (Lira, Alebtong, Dokolo). Present pilot plan and farmer mobilization request. Ask for: facilitation + access to agricultural records.",dep:"Output: district facilitation letters",priority:"CRITICAL",status:"TODO",notes:""},
   {id:25,week:3,stream:"TECHNICAL",owner:"CTO",action:"Build CHIRPS data processing pipeline: Python worker downloads CHIRPS NetCDF for Uganda. Computes rainfall anomaly vs 1981–2023 baseline. Stores district-level deficits in Supabase.",dep:"Output: automated CHIRPS processing — 2024 drought data live",priority:"HIGH",status:"TODO",notes:""},
-  {id:26,week:3,stream:"TECHNICAL",owner:"BE1",action:"Satellite sync worker v0.1: polls Copernicus API every 3 days. Downloads cloud-free Sentinel-2 scenes for Lango (<20% cloud, Level-2A). Stores GeoTIFF in GCS. Triggers NDVI computation via GEE.",dep:"Unlocks: automated 5-day NDVI refresh",priority:"HIGH",status:"TODO",notes:""},
+  {id:26,week:3,stream:"TECHNICAL",owner:"BE1",action:"Satellite sync worker v0.1: polls Copernicus API every 3 days. Downloads cloud-free Sentinel-2 scenes for Lango. Stores GeoTIFF in GCS. Triggers NDVI computation via GEE.",dep:"Unlocks: automated 5-day NDVI refresh",priority:"HIGH",status:"TODO",notes:""},
   {id:27,week:3,stream:"PEOPLE",owner:"CEO",action:"Hire Operations Lead and Agronomist. Both critical for Week 7–8 village agent training.",dep:"Output: two signed offers",priority:"HIGH",status:"TODO",notes:""},
   {id:28,week:3,stream:"COMMERCIAL",owner:"CEO",action:"Send formal offtake agreement drafts to interested buyers. Target: 1 signed LOI by end of Month 1 (Week 4).",dep:"Output: first offtaker LOI",priority:"HIGH",status:"TODO",notes:""},
   {id:29,week:3,stream:"TECHNICAL",owner:"CTO",action:"Set up PostHog (free: 1M events/month). Instrument USSD session events: session_start, menu_selected, registration_complete, session_timeout.",dep:"Unlocks: data-driven USSD improvement",priority:"MEDIUM",status:"TODO",notes:""},
-  // WEEK 4
   {id:30,week:4,stream:"GOVERNMENT",owner:"CEO",action:"Secure minimum 1 signed LOI: MAAIF or NEMA. If unsigned by Day 26, escalate to Minister's office directly. Bring printed Aeryion dashboard to every meeting.",dep:"Output: first government LOI — unblocks investor narrative",priority:"CRITICAL",status:"TODO",notes:""},
   {id:31,week:4,stream:"PEOPLE",owner:"CEO/CTO",action:"Complete all 4 software engineering hires: BE#1 (Aeryion/GEE), BE#2 (Coltiva/USSD), FS#1 (Flutter/Android), FS#2 (LinkTrade/Next.js), ML Engineer.",dep:"Output: full engineering team for Phase 2 sprint",priority:"CRITICAL",status:"TODO",notes:""},
   {id:32,week:4,stream:"TECHNICAL",owner:"CTO+BE2",action:"Coltiva USSD v0.2: add crop calendar query. Farmer inputs: crop + district → receives planting window + variety recommendation from Crop Intelligence Database v2.0.",dep:"Output: first useful farmer query end-to-end",priority:"CRITICAL",status:"TODO",notes:""},
@@ -930,7 +1282,6 @@ const DEFAULT_TASKS = [
   {id:36,week:4,stream:"TECHNICAL",owner:"ML Engineer",action:"Begin LSTM weather forecast model: download historical UNMA + CHIRPS data. Set up Google Colab. Baseline model: predict 7-day rainfall from 30-day history. Target: 80%+ accuracy.",dep:"Output: baseline model running",priority:"HIGH",status:"TODO",notes:""},
   {id:37,week:4,stream:"FINANCE",owner:"CEO",action:"Month 1 burn rate review. Confirm procurement timelines. IoT hardware order must be placed this week to hit Week 8 deployment target.",dep:"Output: hardware order placed",priority:"HIGH",status:"TODO",notes:""},
   {id:38,week:4,stream:"REVIEW",owner:"CEO",action:"Week 4 / Month 1 Founder Review: score every workstream Red/Amber/Green. Document all blockers for Month 2.",dep:"Output: formal Month 1 review document",priority:"HIGH",status:"TODO",notes:""},
-  // WEEK 5
   {id:39,week:5,stream:"TECHNICAL",owner:"BE1",action:"Aeryion IoT station collector service (FastAPI). Receives MQTT telemetry from stations via AWS IoT Core. Validates, normalises, persists to InfluxDB every 5 min. Detects offline events.",dep:"Unlocks: real IoT data on dashboard when hardware arrives",priority:"CRITICAL",status:"TODO",notes:""},
   {id:40,week:5,stream:"TECHNICAL",owner:"BE2",action:"Coltiva USSD v0.3: add weather alert query. Farmer → receives sub-county 7-day forecast from Aeryion. Connects to Kafka consumer for WEATHER_ALERT events.",dep:"Output: first cross-platform Kafka event consumed",priority:"CRITICAL",status:"TODO",notes:""},
   {id:41,week:5,stream:"TECHNICAL",owner:"FS1",action:"Flutter Android app v0.1: scaffold. Screens: Onboarding (OTP + farm pin drop + crop selection), Home Dashboard, Crop Advisor placeholder. Offline mode: Room DB + WorkManager.",dep:"Unlocks: agent-assisted onboarding from Week 7",priority:"CRITICAL",status:"TODO",notes:""},
@@ -939,7 +1290,6 @@ const DEFAULT_TASKS = [
   {id:44,week:5,stream:"TECHNICAL",owner:"FS2",action:"LinkTrade buyer portal v0.1: Next.js scaffold. Pages: buyer registration, marketplace browse (placeholder), price dashboard (EAGC + RATIN + UBoS feeds).",dep:"Output: buyer portal live on Vercel",priority:"HIGH",status:"TODO",notes:""},
   {id:45,week:5,stream:"TECHNICAL",owner:"ML Engineer",action:"Pest detection model: download PlantVillage dataset (55K images). Fine-tune ResNet-50 on Google Colab T4. Target: >85% accuracy on maize Fall Armyworm and Cassava Mosaic. Package as TF Lite (15MB).",dep:"Unlocks: offline pest detection in Flutter app Week 6",priority:"HIGH",status:"TODO",notes:""},
   {id:46,week:5,stream:"GRANTS",owner:"CEO",action:"Apply: USAID Development Innovation Ventures Stage 1 ($25K–$150K). Apply: WFP Innovation Accelerator ($100K + procurement access). Both non-dilutive.",dep:"Output: 2 major grant applications submitted",priority:"MEDIUM",status:"TODO",notes:""},
-  // WEEK 6
   {id:47,week:6,stream:"HARDWARE",owner:"CTO+Ops",action:"Deploy first 5 IoT stations in Lira district. Map GPS to Supabase iot_stations. Configure AWS IoT Core certificates. Confirm InfluxDB receiving telemetry. Set up Grafana uptime alert.",dep:"Output: 5 stations live — real sensor data flowing",priority:"CRITICAL",status:"TODO",notes:""},
   {id:48,week:6,stream:"TECHNICAL",owner:"BE1",action:"Aeryion v0.5: integrate live IoT telemetry into dashboard. Add temp, humidity, rainfall panels alongside NDVI and CHIRPS layers. Share updated URL with MAAIF.",dep:"Output: multi-source intelligence dashboard — MAAIF demo-ready",priority:"CRITICAL",status:"TODO",notes:""},
   {id:49,week:6,stream:"COMMERCIAL",owner:"CEO",action:"Target: sign first offtaker purchase agreement. Maize processor or sesame exporter. Minimum: signed LOI with price floor, quality spec, quantity commitment.",dep:"Output: first offtaker agreement signed",priority:"CRITICAL",status:"TODO",notes:""},
@@ -948,16 +1298,14 @@ const DEFAULT_TASKS = [
   {id:52,week:6,stream:"PEOPLE",owner:"Ops Lead",action:"3 Field Coordinators start in Lira, Alebtong, Dokolo. Begin district community mapping: identify farmer cooperatives and cooperative leadership.",dep:"Output: cooperative contact list per district",priority:"HIGH",status:"TODO",notes:""},
   {id:53,week:6,stream:"REGULATORY",owner:"CEO/Legal",action:"CAA follow-up: submit outstanding documentation. If UAV approval delayed beyond Week 8, formally activate parallel plan: satellite + IoT only for Months 4–6.",dep:"Output: CAA status confirmed",priority:"HIGH",status:"TODO",notes:""},
   {id:54,week:6,stream:"TECHNICAL",owner:"ML Engineer",action:"Weather forecast service v0.1: deploy LSTM model to Hugging Face Hub. FastAPI endpoint returns 7-day sub-county forecast. Publishes WEATHER_ALERT to Kafka if drought/flood threshold breached.",dep:"Unlocks: automated alert broadcasts in Week 7",priority:"HIGH",status:"TODO",notes:""},
-  // WEEK 7
-  {id:55,week:7,stream:"TECHNICAL",owner:"BE1+BE2",action:"End-to-end Kafka integration test: trigger mock WEATHER_ALERT (drought, Lira Central, HIGH). Confirm: Coltiva receives → calendar updates → USSD push to 5 test farmers. Document trace in Sentry.",dep:"Output: closed-loop cycle proven",priority:"CRITICAL",status:"TODO",notes:""},
+  {id:55,week:7,stream:"TECHNICAL",owner:"BE1+BE2",action:"End-to-end Kafka integration test: trigger mock WEATHER_ALERT (drought, Lira Central, HIGH). Confirm: Coltiva receives → calendar updates → USSD push to 5 test farmers.",dep:"Output: closed-loop cycle proven",priority:"CRITICAL",status:"TODO",notes:""},
   {id:56,week:7,stream:"GOVERNMENT",owner:"CEO",action:"MAAIF MOU: target signature this week. If unsigned by Day 49, escalate to Minister. Present: live dashboard, 5 IoT stations, USSD tested with farmers.",dep:"Output: signed MAAIF MOU — unblocks farmer mobilization",priority:"CRITICAL",status:"TODO",notes:""},
   {id:57,week:7,stream:"PEOPLE",owner:"Agronomist+Ops",action:"First village agent training cohort: 40 agents. 3-day program: Day 1 — USSD + Android. Day 2 — farmer registration + GPS farm location. Day 3 — agronomic basics for maize and sesame. Assess all 40.",dep:"Output: 40 certified agents ready to onboard farmers",priority:"CRITICAL",status:"TODO",notes:""},
-  {id:58,week:7,stream:"TECHNICAL",owner:"CTO",action:"Coltiva v0.8: all 5 USSD menus functional. Pest alert module: triggers PEST_OUTBREAK_DETECTED if 3+ identical reports in sub-county within 48hrs. Android app in beta — install on all 40 agent phones.",dep:"Output: both channels functional",priority:"HIGH",status:"TODO",notes:""},
+  {id:58,week:7,stream:"TECHNICAL",owner:"CTO",action:"Coltiva v0.8: all 5 USSD menus functional. Pest alert module: triggers PEST_OUTBREAK_DETECTED if 3+ identical reports in sub-county within 48hrs. Android app in beta.",dep:"Output: both channels functional",priority:"HIGH",status:"TODO",notes:""},
   {id:59,week:7,stream:"HARDWARE",owner:"CTO+Ops",action:"Deploy additional 10 IoT stations: 5 in Alebtong, 5 in Dokolo. Total: 15 of 25 live. Confirm cross-district coverage on Aeryion dashboard. Target: 99% uptime.",dep:"Output: 15 stations live across all 3 districts",priority:"HIGH",status:"TODO",notes:""},
   {id:60,week:7,stream:"TECHNICAL",owner:"FS2",action:"LinkTrade v0.3: farmer produce listing flow. Fields: crop, quantity (MT), asking price (UGX/MT), GPS pin, availability window, photos. Price oracle flags if >20% below EAGC benchmark.",dep:"Output: first produce listing possible from farmer side",priority:"HIGH",status:"TODO",notes:""},
   {id:61,week:7,stream:"TECHNICAL",owner:"BE2",action:"Coltiva planting calendar service: generates personalised windows per farmer from sub_county_id, crops, and Aeryion 7-day forecast. Re-computes on WEATHER_ALERT. Pushes to USSD and Android.",dep:"Output: dynamic personalised calendar",priority:"HIGH",status:"TODO",notes:""},
-  // WEEK 8
-  {id:62,week:8,stream:"PEOPLE",owner:"Agronomist+Ops",action:"Second and third village agent training cohorts: 80 agents (total: 120 certified). All assigned to 1,000-farmer zones. Agent portal: farmer list, visit log, commission tracker. All on MTN/Airtel MoMo.",dep:"Output: 120 certified agents deployed across 3 districts",priority:"CRITICAL",status:"TODO",notes:""},
+  {id:62,week:8,stream:"PEOPLE",owner:"Agronomist+Ops",action:"Second and third village agent training cohorts: 80 agents (total: 120 certified). All assigned to 1,000-farmer zones. Agent portal: farmer list, visit log, commission tracker.",dep:"Output: 120 certified agents deployed across 3 districts",priority:"CRITICAL",status:"TODO",notes:""},
   {id:63,week:8,stream:"TECHNICAL",owner:"CTO",action:"Full platform integration demo: USSD registration → crop recommendation → Aeryion weather alert → planting calendar → LinkTrade market price. All 6 Kafka events fired and consumed. CTO records run-through as investor demo video.",dep:"Output: integrated demo video",priority:"CRITICAL",status:"TODO",notes:""},
   {id:64,week:8,stream:"COMMERCIAL",owner:"Ops",action:"Identify first 500 farmers for soft-launch pre-registration in Lira. Work through 40 certified agents. Use cooperative contacts from Week 6.",dep:"Output: 500 farmers pre-registered — Phase 2 launch base",priority:"CRITICAL",status:"TODO",notes:""},
   {id:65,week:8,stream:"GOVERNMENT",owner:"CEO",action:"NEMA environmental monitoring MOU: target signature this week. Offer: AERIS provides Aeryion dashboard. NEMA provides: official endorsement + historical monitoring records.",dep:"Output: NEMA MOU — $500K+ in investor credibility",priority:"HIGH",status:"TODO",notes:""},
@@ -967,33 +1315,22 @@ const DEFAULT_TASKS = [
 ];
 
 const CHECKLIST_ITEMS = [
-  {id:"c1", label:"Government LOIs / MOUs signed", target:"5 of 5 (MAAIF + NEMA + 3 districts)"},
-  {id:"c2", label:"IoT weather stations deployed and operational", target:"25 / 25 stations"},
-  {id:"c3", label:"Village agents trained and certified", target:"120 agents"},
-  {id:"c4", label:"Farmers pre-registered for Phase 2 launch", target:"500 minimum"},
-  {id:"c5", label:"Aeryion dashboard live (satellite + IoT)", target:"Live URL confirmed"},
-  {id:"c6", label:"Coltiva USSD flow functional (registration + calendar + alert)", target:"All 3 menus working"},
-  {id:"c7", label:"Kafka integration proven end-to-end", target:"Full trace in Sentry"},
-  {id:"c8", label:"First offtaker LOI signed", target:"1 agreement minimum"},
+  {id:"c1",label:"Government LOIs / MOUs signed",target:"5 of 5"},
+  {id:"c2",label:"IoT weather stations deployed and operational",target:"25/25 stations"},
+  {id:"c3",label:"Village agents trained and certified",target:"120 agents"},
+  {id:"c4",label:"Farmers pre-registered for Phase 2 launch",target:"500 minimum"},
+  {id:"c5",label:"Aeryion dashboard live (satellite + IoT)",target:"Live URL confirmed"},
+  {id:"c6",label:"Coltiva USSD flow functional",target:"All 3 menus working"},
+  {id:"c7",label:"Kafka integration proven end-to-end",target:"Full trace in Sentry"},
+  {id:"c8",label:"First offtaker LOI signed",target:"1 agreement minimum"},
 ];
 
-// ── Cross-device sync storage ────────────────────────────────────────────────
-// Uses the artifact's persistent storage API (window.storage), which syncs
-// across devices tied to the same account. localStorage is kept as a local
-// cache for fast first paint and as a fallback if cloud storage is ever
-// unavailable.
+// ── Storage ──────────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'aeris-state-v1';
 const SAVE_DEBOUNCE_MS = 500;
-const hasCloudStorage =
-  typeof window !== 'undefined' &&
-  typeof window.storage !== 'undefined' &&
-  window.storage &&
-  typeof window.storage.get === 'function' &&
-  typeof window.storage.set === 'function';
+const hasCloudStorage = typeof window !== 'undefined' && typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function';
 
-let saveTimer = null;
-let saveInFlight = false;
-let dirtyDuringSave = false;
+let saveTimer = null, saveInFlight = false, dirtyDuringSave = false;
 
 function setSyncStatus(status) {
   const el = document.getElementById('sync-status');
@@ -1001,59 +1338,26 @@ function setSyncStatus(status) {
   let displayStatus = status;
   let label;
   if (!hasCloudStorage) {
-    // No cloud storage available — make it clear changes are local-only.
-    if (status === 'loading')      { displayStatus = 'loading'; label = '⟳ Loading…'; }
-    else if (status === 'pending' ||
-             status === 'syncing') { displayStatus = 'offline'; label = '○ Saving locally'; }
-    else if (status === 'synced')  { displayStatus = 'offline'; label = '○ Local only'; }
-    else                           { displayStatus = 'error';   label = '! Save error'; }
+    if (status === 'loading')   { displayStatus = 'loading'; label = '⟳ Loading…'; }
+    else if (status === 'pending' || status === 'syncing') { displayStatus = 'offline'; label = '○ Local'; }
+    else if (status === 'synced') { displayStatus = 'offline'; label = '○ Local'; }
+    else { displayStatus = 'error'; label = '! Error'; }
   } else {
-    label = {
-      loading: '⟳ Loading…',
-      pending: '◌ Pending',
-      syncing: '⟳ Syncing…',
-      synced:  '✓ Synced',
-      error:   '! Sync error',
-    }[status] || status;
+    label = { loading:'⟳ Loading…', pending:'◌ Pending', syncing:'⟳ Syncing…', synced:'✓ Synced', error:'! Error' }[status] || status;
   }
   el.textContent = label;
   el.className = 'stat-pill sync-' + displayStatus;
-  el.title = hasCloudStorage
-    ? 'Changes sync across all your devices (' + status + ')'
-    : 'Cloud sync unavailable — saving to this device only';
 }
 
 async function loadState() {
-  // 1. Preferred: cloud storage (cross-device).
   if (hasCloudStorage) {
-    try {
-      const result = await window.storage.get(STORAGE_KEY);
-      if (result && result.value) {
-        return JSON.parse(result.value);
-      }
-    } catch (err) {
-      // Key doesn't exist yet on first run — fall through.
-    }
+    try { const r = await window.storage.get(STORAGE_KEY); if (r && r.value) return JSON.parse(r.value); } catch {}
   }
-  // 2. Migrate legacy per-key localStorage from the pre-sync version.
   try {
-    const oldTasks = localStorage.getItem('aeris_tasks');
-    if (oldTasks) {
-      const oldChecklist = localStorage.getItem('aeris_checklist');
-      const oldNextId = localStorage.getItem('aeris_nextid');
-      return {
-        tasks: JSON.parse(oldTasks),
-        checklist: oldChecklist ? JSON.parse(oldChecklist) : {},
-        nextId: oldNextId ? JSON.parse(oldNextId) : null,
-        _migrated: true,
-      };
-    }
+    const old = localStorage.getItem('aeris_tasks');
+    if (old) return { tasks: JSON.parse(old), checklist: JSON.parse(localStorage.getItem('aeris_checklist')||'{}'), nextId: JSON.parse(localStorage.getItem('aeris_nextid')||'null'), _migrated: true };
   } catch {}
-  // 3. Local cache / offline fallback under the new key.
-  try {
-    const cached = localStorage.getItem(STORAGE_KEY);
-    if (cached) return JSON.parse(cached);
-  } catch {}
+  try { const c = localStorage.getItem(STORAGE_KEY); if (c) return JSON.parse(c); } catch {}
   return null;
 }
 
@@ -1066,48 +1370,50 @@ function scheduleSave() {
 async function doSave() {
   saveTimer = null;
   if (saveInFlight) { dirtyDuringSave = true; return; }
-  saveInFlight = true;
-  dirtyDuringSave = false;
-  const payload = JSON.stringify({
-    tasks, checklist, nextId,
-    updatedAt: Date.now(),
-    version: 1,
-  });
+  saveInFlight = true; dirtyDuringSave = false;
+  const payload = JSON.stringify({ tasks, checklist, nextId, updatedAt: Date.now(), version: 1 });
   setSyncStatus('syncing');
-  let cloudOk = false;
-  if (hasCloudStorage) {
-    try {
-      await window.storage.set(STORAGE_KEY, payload);
-      cloudOk = true;
-    } catch (err) {
-      console.error('Cloud sync failed:', err);
-    }
-  }
-  // Always update the local cache too, so subsequent loads are fast.
+  let ok = false;
+  if (hasCloudStorage) { try { await window.storage.set(STORAGE_KEY, payload); ok = true; } catch {} }
   try { localStorage.setItem(STORAGE_KEY, payload); } catch {}
-  setSyncStatus(cloudOk || !hasCloudStorage ? 'synced' : 'error');
+  setSyncStatus(ok || !hasCloudStorage ? 'synced' : 'error');
   saveInFlight = false;
   if (dirtyDuringSave) scheduleSave();
 }
 
-// Best-effort flush when the tab is closed or hidden.
-window.addEventListener('beforeunload', () => {
-  if (saveTimer) { clearTimeout(saveTimer); doSave(); }
-});
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden' && saveTimer) {
-    clearTimeout(saveTimer); doSave();
-  }
-});
+window.addEventListener('beforeunload', () => { if (saveTimer) { clearTimeout(saveTimer); doSave(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && saveTimer) { clearTimeout(saveTimer); doSave(); } });
 
 // ── State ────────────────────────────────────────────────────────────────────
-let tasks = [];
-let checklist = {};
-let nextId = 1;
-let currentView = 'tasks';
-let filterStatus = 'ALL';
-let filterSearch = '';
+let tasks = [], checklist = {}, nextId = 1;
+let currentView = 'tasks', filterStatus = 'ALL', filterSearch = '';
 let editingId = null;
+let sidebarOpen = false;
+
+// ── Sidebar toggle ────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  sidebarOpen ? closeSidebar() : openSidebar();
+}
+function openSidebar() {
+  sidebarOpen = true;
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+  document.getElementById('hamburger').classList.add('open');
+}
+function closeSidebar() {
+  sidebarOpen = false;
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+  document.getElementById('hamburger').classList.remove('open');
+}
+
+function updateBottomNav(view) {
+  ['tasks','overview','checklist'].forEach(v => {
+    const el = document.getElementById('bnav-' + v);
+    if (el) el.classList.toggle('active', v === view);
+  });
+  document.getElementById('bnav-weeks').classList.remove('active');
+}
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function getStats() {
@@ -1117,8 +1423,8 @@ function getStats() {
   const crit = tasks.filter(t=>t.priority==='CRITICAL');
   const critDone = crit.filter(t=>t.status==='DONE').length;
   return {
-    done, prog, blocked,
-    total: tasks.length,
+    done, prog, blocked, total: tasks.length,
+    critOutstanding: crit.filter(t=>t.status!=='DONE').length,
     pct: tasks.length ? Math.round(done/tasks.length*100) : 0,
     critPct: crit.length ? Math.round(critDone/crit.length*100) : 0,
   };
@@ -1126,25 +1432,29 @@ function getStats() {
 
 function updateStats() {
   const s = getStats();
+  // Desktop header
   document.getElementById('stat-done').textContent = `● ${s.done} Done`;
-  document.getElementById('stat-progress').textContent = `◐ ${s.prog} In Progress`;
+  document.getElementById('stat-progress').textContent = `◐ ${s.prog} Active`;
   document.getElementById('stat-blocked').textContent = `✕ ${s.blocked} Blocked`;
   document.getElementById('stat-total').textContent = `◻ ${s.total} Total`;
+  // Desktop sidebar
   document.getElementById('main-progress').style.width = s.pct + '%';
   document.getElementById('pct-label').textContent = s.pct + '%';
   document.getElementById('crit-progress').style.width = s.critPct + '%';
   document.getElementById('crit-label').textContent = s.critPct + '%';
-
-  // sidebar counts
+  // Mobile mini stats bar
+  const md = document.getElementById('m-done'); if(md) md.textContent = s.done;
+  const mp = document.getElementById('m-prog'); if(mp) mp.textContent = s.prog;
+  const mb = document.getElementById('m-blocked'); if(mb) mb.textContent = s.blocked;
+  const mc = document.getElementById('m-crit'); if(mc) mc.textContent = s.critOutstanding;
+  const mpb = document.getElementById('m-pct'); if(mpb) mpb.style.width = s.pct + '%';
+  const mpl = document.getElementById('m-pct-label'); if(mpl) mpl.textContent = s.pct + '%';
+  const mcb = document.getElementById('m-crit-bar'); if(mcb) mcb.style.width = s.critPct + '%';
+  const mcl = document.getElementById('m-crit-label'); if(mcl) mcl.textContent = s.critPct + '%';
+  // Sidebar counts
   document.getElementById('cnt-all').textContent = tasks.length;
-  [1,2,3,4,5,6,7,8].forEach(w => {
-    const el = document.getElementById('cnt-w'+w);
-    if(el) el.textContent = tasks.filter(t=>t.week===w).length;
-  });
-  ['TECHNICAL','GOVERNMENT','PEOPLE','COMMERCIAL','HARDWARE'].forEach(s => {
-    const el = document.getElementById('cnt-'+s);
-    if(el) el.textContent = tasks.filter(t=>t.stream===s).length;
-  });
+  [1,2,3,4,5,6,7,8].forEach(w => { const el = document.getElementById('cnt-w'+w); if(el) el.textContent = tasks.filter(t=>t.week===w).length; });
+  ['TECHNICAL','GOVERNMENT','PEOPLE','COMMERCIAL','HARDWARE'].forEach(st => { const el = document.getElementById('cnt-'+st); if(el) el.textContent = tasks.filter(t=>t.stream===st).length; });
 }
 
 // ── Views ─────────────────────────────────────────────────────────────────────
@@ -1152,10 +1462,10 @@ function setView(v) {
   currentView = v;
   filterStatus = 'ALL';
   filterSearch = '';
-  document.querySelectorAll('.sidebar-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.view === v);
-  });
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.toggle('active', el.dataset.view === v));
+  updateBottomNav(v);
   render();
+  window.scrollTo(0, 0);
 }
 
 function render() {
@@ -1163,64 +1473,58 @@ function render() {
   const el = document.getElementById('main-content');
   if (currentView === 'overview') { el.innerHTML = renderOverview(); return; }
   if (currentView === 'checklist') { el.innerHTML = renderChecklist(); attachChecklistListeners(); return; }
-  if (currentView === 'tasks') { el.innerHTML = renderAllTasks(); attachTaskListeners(); return; }
-  if (currentView.startsWith('week-')) {
-    const w = parseInt(currentView.split('-')[1]);
-    el.innerHTML = renderWeekView(w); attachTaskListeners(); return;
-  }
-  if (currentView.startsWith('stream-')) {
-    const s = currentView.split('-')[1];
-    el.innerHTML = renderStreamView(s); attachTaskListeners(); return;
-  }
+  if (currentView === 'tasks') { el.innerHTML = renderTaskView(tasks, 'All Tasks', `${tasks.length} total`); attachTaskListeners(); return; }
+  if (currentView.startsWith('week-')) { const w = parseInt(currentView.split('-')[1]); el.innerHTML = renderWeekView(w); attachTaskListeners(); return; }
+  if (currentView.startsWith('stream-')) { const s = currentView.split('-')[1]; el.innerHTML = renderStreamView(s); attachTaskListeners(); return; }
 }
 
 // ── Overview ──────────────────────────────────────────────────────────────────
 function renderOverview() {
   const s = getStats();
   const byWeek = [1,2,3,4,5,6,7,8].map(w => {
-    const wt = tasks.filter(t=>t.week===w);
-    const wd = wt.filter(t=>t.status==='DONE').length;
-    return { w, total: wt.length, done: wd, pct: wt.length ? Math.round(wd/wt.length*100) : 0 };
+    const wt = tasks.filter(t=>t.week===w), wd = wt.filter(t=>t.status==='DONE').length;
+    return { w, total:wt.length, done:wd, pct: wt.length ? Math.round(wd/wt.length*100) : 0 };
   });
-
   const byStream = ['TECHNICAL','GOVERNMENT','PEOPLE','COMMERCIAL','HARDWARE','FINANCE','REGULATORY','GRANTS','REVIEW'].map(st => {
-    const st_tasks = tasks.filter(t=>t.stream===st);
-    const done = st_tasks.filter(t=>t.status==='DONE').length;
-    return { st, total: st_tasks.length, done, pct: st_tasks.length ? Math.round(done/st_tasks.length*100) : 0 };
+    const st_tasks = tasks.filter(t=>t.stream===st), done = st_tasks.filter(t=>t.status==='DONE').length;
+    return { st, total:st_tasks.length, done, pct: st_tasks.length ? Math.round(done/st_tasks.length*100) : 0 };
   }).filter(x=>x.total>0);
 
   return `
   <div class="view-header">
-    <div><div class="view-title">Phase 1 Overview</div><div class="view-sub">8 weeks · ${s.total} tasks · ${s.pct}% complete</div></div>
-    <button class="btn btn-primary" onclick="openModal()">+ Add Task</button>
+    <div class="view-header-left">
+      <div class="view-title">Phase 1 Overview</div>
+      <div class="view-sub">${s.total} tasks · ${s.pct}% complete</div>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()">+ Add</button>
   </div>
   <div class="overview-grid">
-    <div class="overview-card green"><div class="card-num">${s.done}</div><div class="card-label">Tasks Complete</div><div class="card-sub">${s.pct}% of total</div></div>
+    <div class="overview-card green"><div class="card-num">${s.done}</div><div class="card-label">Complete</div><div class="card-sub">${s.pct}% of total</div></div>
     <div class="overview-card amber"><div class="card-num">${s.prog}</div><div class="card-label">In Progress</div><div class="card-sub">active work</div></div>
     <div class="overview-card red"><div class="card-num">${s.blocked}</div><div class="card-label">Blocked</div><div class="card-sub">need attention</div></div>
-    <div class="overview-card blue"><div class="card-num">${tasks.filter(t=>t.priority==='CRITICAL'&&t.status!=='DONE').length}</div><div class="card-label">Critical Outstanding</div><div class="card-sub">CRITICAL priority</div></div>
+    <div class="overview-card blue"><div class="card-num">${s.critOutstanding}</div><div class="card-label">Critical Left</div><div class="card-sub">outstanding</div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="overview-2col">
     <div>
-      <div class="view-title" style="font-size:11px;margin-bottom:12px">Progress by Week</div>
+      <div class="view-title" style="font-size:11px;margin-bottom:12px">By Week</div>
       ${byWeek.map(({w,total,done,pct})=>`
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer" onclick="setView('week-${w}')">
-          <span style="font-family:var(--mono);font-size:10px;color:var(--green3);min-width:54px">WK ${w}</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;min-height:32px" onclick="setView('week-${w}')">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--green3);min-width:42px">WK ${w}</span>
           <div style="flex:1;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">
             <div style="height:100%;width:${pct}%;background:${pct===100?'var(--green3)':pct>50?'var(--green2)':'var(--amber)'};border-radius:3px;transition:width 0.4s"></div>
           </div>
-          <span style="font-family:var(--mono);font-size:9px;color:var(--textDim);min-width:50px;text-align:right">${done}/${total} · ${pct}%</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--textDim);min-width:44px;text-align:right">${done}/${total}</span>
         </div>`).join('')}
     </div>
     <div>
-      <div class="view-title" style="font-size:11px;margin-bottom:12px">Progress by Stream</div>
+      <div class="view-title" style="font-size:11px;margin-bottom:12px">By Stream</div>
       ${byStream.map(({st,total,done,pct})=>`
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer" onclick="setView('stream-${st}')">
-          <span class="stream-badge stream-${st}" style="min-width:88px;text-align:center;font-size:8px">${st}</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;min-height:32px" onclick="setView('stream-${st}')">
+          <span class="stream-badge stream-${st}" style="min-width:72px;text-align:center;font-size:7.5px">${st.slice(0,6)}</span>
           <div style="flex:1;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">
             <div style="height:100%;width:${pct}%;background:${pct===100?'var(--green3)':pct>50?'var(--green2)':'var(--amber)'};border-radius:3px;transition:width 0.4s"></div>
           </div>
-          <span style="font-family:var(--mono);font-size:9px;color:var(--textDim);min-width:50px;text-align:right">${done}/${total}</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--textDim);min-width:36px;text-align:right">${done}/${total}</span>
         </div>`).join('')}
     </div>
   </div>`;
@@ -1233,22 +1537,22 @@ function renderChecklist() {
   const canProceed = done >= 6;
   return `
   <div class="view-header">
-    <div>
-      <div class="view-title">Phase 1 Gate Checklist</div>
-      <div class="view-sub">Minimum 6/8 Green required to proceed to Phase 2</div>
+    <div class="view-header-left">
+      <div class="view-title">Gate Checklist</div>
+      <div class="view-sub">Min 6/8 Green to proceed to Phase 2</div>
     </div>
-    <div class="stat-pill ${canProceed?'green':'red'}">${canProceed?'✓ PROCEED TO PHASE 2':'✕ '+done+'/8 — HOLD'}</div>
+    <div class="stat-pill ${canProceed?'green':'red'}">${canProceed?'✓ GO':'✕ '+done+'/8'}</div>
   </div>
-  <div style="background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:16px;margin-bottom:20px">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:14px;margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--textDim);margin-bottom:8px">
       <span>Readiness Score</span><span style="color:var(--green4)">${done}/8 · ${pct}%</span>
     </div>
     <div class="progress-track" style="height:8px"><div class="progress-fill" style="width:${pct}%;background:${pct>=75?'linear-gradient(90deg,var(--green),var(--green3))':'linear-gradient(90deg,var(--red),var(--amber))'}"></div></div>
   </div>
   <div class="checklist-grid">
-    ${CHECKLIST_ITEMS.map(c=>`
+    ${CHECKLIST_ITEMS.map((c,i)=>`
     <div class="checklist-card">
-      <div class="checklist-card-title">${CHECKLIST_ITEMS.indexOf(c)+1}. Gate Criterion</div>
+      <div class="checklist-card-title">${i+1}. Gate Criterion</div>
       <label class="checklist-item ${checklist[c.id]?'checked':''}">
         <input type="checkbox" ${checklist[c.id]?'checked':''} data-cid="${c.id}">
         <span>${c.label}</span>
@@ -1260,28 +1564,69 @@ function renderChecklist() {
 
 function attachChecklistListeners() {
   document.querySelectorAll('[data-cid]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      checklist[cb.dataset.cid] = cb.checked;
-      scheduleSave();
-      render();
-    });
+    cb.addEventListener('change', () => { checklist[cb.dataset.cid] = cb.checked; scheduleSave(); render(); });
   });
 }
 
-// ── Task table renderer ───────────────────────────────────────────────────────
+// ── Task rendering ────────────────────────────────────────────────────────────
+function filterBar(isMobile) {
+  return `<div class="filter-bar">
+    <div class="filter-pills">
+      ${['ALL','TODO','IN_PROGRESS','DONE','BLOCKED','CRITICAL'].map(f=>`
+        <button class="filter-btn ${filterStatus===f?'active':''}" onclick="setFilter('${f}')">${f==='IN_PROGRESS'?'ACTIVE':f}</button>
+      `).join('')}
+    </div>
+    <input class="filter-search" placeholder="Search…" value="${filterSearch}" oninput="setSearch(this.value)">
+  </div>`;
+}
+
+function applyFilters(source) {
+  return source.filter(t => {
+    const sm = filterStatus==='ALL'||filterStatus===t.status||filterStatus===t.priority;
+    const qm = !filterSearch || t.action.toLowerCase().includes(filterSearch.toLowerCase()) || t.owner.toLowerCase().includes(filterSearch.toLowerCase()) || t.stream.toLowerCase().includes(filterSearch.toLowerCase());
+    return sm && qm;
+  });
+}
+
+// Mobile card render
+function taskCards(filtered) {
+  if (!filtered.length) return `<div class="empty-state">NO TASKS MATCH</div>`;
+  return filtered.map(t => `
+  <div class="task-card ${t.status==='DONE'?'done':''}">
+    <div class="task-card-top">
+      <div class="task-card-badges">
+        <span class="stream-badge stream-${t.stream}">${t.stream}</span>
+        <span class="prio-badge prio-${t.priority}">${t.priority}</span>
+      </div>
+      <button class="status-btn status-${t.status}" onclick="cycleStatus(${t.id},event)">${statusLabel(t.status)}</button>
+    </div>
+    <div class="task-card-action">${escHtml(t.action)}</div>
+    ${t.dep ? `<div class="task-card-dep">${escHtml(t.dep)}</div>` : ''}
+    <div class="task-card-bottom">
+      <span class="owner-chip">${escHtml(t.owner)}</span>
+      <div class="task-card-notes">
+        <textarea class="notes-input" rows="1" data-taskid="${t.id}" placeholder="notes…">${escHtml(t.notes)}</textarea>
+      </div>
+      <div class="task-card-actions">
+        <button class="row-btn" onclick="openEditModal(${t.id},event)">Edit</button>
+        <button class="row-btn del" onclick="deleteTask(${t.id},event)">Del</button>
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+// Desktop table render
 function taskRows(filtered) {
-  if (!filtered.length) return `<tr><td colspan="7" class="empty-state">NO TASKS MATCH CURRENT FILTER</td></tr>`;
+  if (!filtered.length) return `<tr><td colspan="7" class="empty-state">NO TASKS MATCH</td></tr>`;
   return filtered.map(t => `
     <tr class="${t.status==='DONE'?'done':''}" data-id="${t.id}">
       <td><span class="stream-badge stream-${t.stream}">${t.stream}</span></td>
-      <td><span class="owner-chip">${t.owner}</span></td>
-      <td style="max-width:320px">${escHtml(t.action)}</td>
+      <td><span class="owner-chip">${escHtml(t.owner)}</span></td>
+      <td style="max-width:300px">${escHtml(t.action)}</td>
       <td class="task-output">${escHtml(t.dep)}</td>
       <td><span class="prio-badge prio-${t.priority}">${t.priority}</span></td>
-      <td>
-        <button class="status-btn status-${t.status}" onclick="cycleStatus(${t.id},event)">${statusLabel(t.status)}</button>
-      </td>
-      <td class="notes-cell">
+      <td><button class="status-btn status-${t.status}" onclick="cycleStatus(${t.id},event)">${statusLabel(t.status)}</button></td>
+      <td class="notes-cell-desktop">
         <div class="row-actions">
           <button class="row-btn" onclick="openEditModal(${t.id},event)">Edit</button>
           <button class="row-btn del" onclick="deleteTask(${t.id},event)">Del</button>
@@ -1301,32 +1646,19 @@ function tableWrap(rows) {
   </table>`;
 }
 
-function filterBar() {
-  return `<div class="filter-bar">
-    ${['ALL','TODO','IN_PROGRESS','DONE','BLOCKED','CRITICAL'].map(f=>`
-      <button class="filter-btn ${filterStatus===f?'active':''}" onclick="setFilter('${f}')">${f}</button>
-    `).join('')}
-    <input class="filter-search" placeholder="Search tasks…" value="${filterSearch}" oninput="setSearch(this.value)">
-    <button class="btn btn-primary" style="margin-left:4px" onclick="openModal()">+ Add Task</button>
-  </div>`;
+function taskBlock(filtered) {
+  return `${tableWrap(taskRows(filtered))}<div class="task-cards">${taskCards(filtered)}</div>`;
 }
 
-function applyFilters(source) {
-  return source.filter(t => {
-    const statusMatch = filterStatus==='ALL'||filterStatus===t.status||filterStatus===t.priority;
-    const searchMatch = !filterSearch || t.action.toLowerCase().includes(filterSearch.toLowerCase()) || t.owner.toLowerCase().includes(filterSearch.toLowerCase()) || t.stream.toLowerCase().includes(filterSearch.toLowerCase());
-    return statusMatch && searchMatch;
-  });
-}
-
-function renderAllTasks() {
-  const filtered = applyFilters(tasks);
+function renderTaskView(source, title, sub) {
+  const filtered = applyFilters(source);
   return `
   <div class="view-header">
-    <div><div class="view-title">All Tasks</div><div class="view-sub">${tasks.length} total · ${filtered.length} shown</div></div>
+    <div class="view-header-left"><div class="view-title">${title}</div><div class="view-sub">${sub} · ${filtered.length} shown</div></div>
+    <button class="btn btn-primary" onclick="openModal()">+ Add</button>
   </div>
   ${filterBar()}
-  ${tableWrap(taskRows(filtered))}`;
+  ${taskBlock(filtered)}`;
 }
 
 function renderWeekView(w) {
@@ -1339,13 +1671,13 @@ function renderWeekView(w) {
   const gateIcons = {gate:'⛔',milestone:'✅',sprint:'🚀',info:'ℹ️'};
   return `
   <div class="view-header">
-    <div>
+    <div class="view-header-left">
       <div class="view-title">Week ${w} — ${meta.days}</div>
       <div class="view-sub">${meta.focus}</div>
     </div>
     <div class="week-progress-mini">
-      <div class="mini-bar"><div class="mini-fill" style="width:${pct}%"></div></div>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--textDim)">${done}/${wTasks.length} · ${pct}%</span>
+      <div class="mini-bar"><div class="mini-fill-bar" style="width:${pct}%"></div></div>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--textDim)">${done}/${wTasks.length}</span>
     </div>
   </div>
   <div class="gate-banner ${gateClass}">
@@ -1353,7 +1685,7 @@ function renderWeekView(w) {
     <div><div class="gate-label">${meta.gate.toUpperCase()}</div>${meta.gateText}</div>
   </div>
   ${filterBar()}
-  ${tableWrap(taskRows(filtered))}`;
+  ${taskBlock(filtered)}`;
 }
 
 function renderStreamView(stream) {
@@ -1362,14 +1694,14 @@ function renderStreamView(stream) {
   const done = sTasks.filter(t=>t.status==='DONE').length;
   return `
   <div class="view-header">
-    <div>
+    <div class="view-header-left">
       <div class="view-title"><span class="stream-badge stream-${stream}">${stream}</span></div>
       <div class="view-sub">${sTasks.length} tasks · ${done} complete</div>
     </div>
-    <button class="btn btn-primary" onclick="openModal()">+ Add Task</button>
+    <button class="btn btn-primary" onclick="openModal()">+ Add</button>
   </div>
   ${filterBar()}
-  ${tableWrap(taskRows(filtered))}`;
+  ${taskBlock(filtered)}`;
 }
 
 // ── Interactions ──────────────────────────────────────────────────────────────
@@ -1377,7 +1709,7 @@ function setFilter(f) { filterStatus = f; render(); }
 function setSearch(v) { filterSearch = v; render(); }
 
 function statusLabel(s) {
-  return {TODO:'○ To Do',IN_PROGRESS:'◐ In Progress',DONE:'● Done',BLOCKED:'✕ Blocked'}[s]||s;
+  return {TODO:'○ Todo',IN_PROGRESS:'◐ Active',DONE:'● Done',BLOCKED:'✕ Blocked'}[s]||s;
 }
 
 function cycleStatus(id, e) {
@@ -1386,18 +1718,14 @@ function cycleStatus(id, e) {
   if(!t) return;
   const cycle = {TODO:'IN_PROGRESS',IN_PROGRESS:'DONE',DONE:'BLOCKED',BLOCKED:'TODO'};
   t.status = cycle[t.status];
-  scheduleSave();
-  toast(`Status → ${t.status}`);
-  render();
+  scheduleSave(); toast(`→ ${t.status.replace('_',' ')}`); render();
 }
 
 function deleteTask(id, e) {
   e.stopPropagation();
   if(!confirm('Delete this task?')) return;
   tasks = tasks.filter(t=>t.id!==id);
-  scheduleSave();
-  toast('Task deleted');
-  render();
+  scheduleSave(); toast('Deleted'); render();
 }
 
 function attachTaskListeners() {
@@ -1456,14 +1784,12 @@ function saveTask() {
   if(editingId) {
     const idx = tasks.findIndex(t=>t.id===editingId);
     if(idx>=0) tasks[idx] = {...tasks[idx], ...taskData};
-    toast('Task updated');
+    toast('Updated');
   } else {
     tasks.push({id: nextId++, ...taskData});
-    toast('Task added');
+    toast('Added');
   }
-  scheduleSave();
-  closeModal();
-  render();
+  scheduleSave(); closeModal(); render();
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -1473,59 +1799,43 @@ function escHtml(s) {
 
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
+  el.textContent = msg; el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'), 2000);
 }
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if(e.key==='Escape') closeModal();
-  if(e.key==='n'&&!e.target.matches('input,textarea,select')) openModal();
+  if(e.key==='Escape') { closeModal(); closeSidebar(); }
+  if(e.key==='n' && !e.target.matches('input,textarea,select')) openModal();
 });
-
 document.getElementById('task-modal').addEventListener('click', e => {
   if(e.target===document.getElementById('task-modal')) closeModal();
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 function hideBootSplash() {
-  const splash = document.getElementById('boot-splash');
-  if (!splash) return;
-  splash.classList.add('hidden');
-  setTimeout(() => splash.remove(), 400);
+  const s = document.getElementById('boot-splash');
+  if(!s) return;
+  s.classList.add('hidden');
+  setTimeout(()=>s.remove(), 400);
 }
 
 async function boot() {
   setSyncStatus('loading');
   let state = null;
-  try {
-    state = await loadState();
-  } catch (err) {
-    console.error('Load failed:', err);
-  }
-
+  try { state = await loadState(); } catch {}
   if (state && Array.isArray(state.tasks) && state.tasks.length) {
     tasks = state.tasks;
     checklist = state.checklist && typeof state.checklist === 'object' ? state.checklist : {};
-    nextId = state.nextId || (Math.max(0, ...tasks.map(t => t.id)) + 1);
-    render();
-    hideBootSplash();
-    if (state._migrated) {
-      // Push migrated local data up to the cloud on first sync-capable run.
-      scheduleSave();
-      toast('Migrated local data to cloud sync');
-    } else {
-      setSyncStatus('synced');
-    }
+    nextId = state.nextId || (Math.max(0, ...tasks.map(t=>t.id)) + 1);
+    render(); hideBootSplash();
+    if (state._migrated) { scheduleSave(); toast('Data migrated to cloud sync'); }
+    else setSyncStatus('synced');
   } else {
-    // First ever run — seed with defaults and push to storage.
     tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
     checklist = {};
-    nextId = Math.max(...DEFAULT_TASKS.map(t => t.id)) + 1;
-    render();
-    hideBootSplash();
-    scheduleSave();
+    nextId = Math.max(...DEFAULT_TASKS.map(t=>t.id)) + 1;
+    render(); hideBootSplash(); scheduleSave();
   }
 }
 
